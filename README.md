@@ -1,10 +1,24 @@
 # Monitoring MCP Server
 
-[![FastMCP](https://img.shields.io/badge/FastMCP-2.14.3+-blue.svg)](https://github.com/jlowin/fastmcp)
+[![CI](https://github.com/sandraschi/monitoring-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/sandraschi/monitoring-mcp/actions)
+[![codecov](https://codecov.io/gh/sandraschi/monitoring-mcp/branch/main/graph/badge.svg)](https://codecov.io/gh/sandraschi/monitoring-mcp)
+[![PyPI version](https://badge.fury.io/py/monitoring-mcp.svg)](https://pypi.org/project/monitoring-mcp/)
+[![PyPI downloads](https://img.shields.io/pypi/dm/monitoring-mcp)](https://pypi.org/project/monitoring-mcp/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+[![FastMCP](https://img.shields.io/badge/FastMCP-2.14.3+-blue.svg)](https://github.com/jlowin/fastmcp)
 [![Grafana](https://img.shields.io/badge/Grafana-Supported-orange.svg)](https://grafana.com)
 [![Prometheus](https://img.shields.io/badge/Prometheus-Supported-orange.svg)](https://prometheus.io)
 [![Loki](https://img.shields.io/badge/Loki-Supported-green.svg)](https://grafana.com/oss/loki/)
+
+[![GitHub Repo stars](https://img.shields.io/github/stars/sandraschi/monitoring-mcp?style=social)](https://github.com/sandraschi/monitoring-mcp)
+[![GitHub last commit](https://img.shields.io/github/last-commit/sandraschi/monitoring-mcp)](https://github.com/sandraschi/monitoring-mcp)
+[![GitHub issues](https://img.shields.io/github/issues/sandraschi/monitoring-mcp)](https://github.com/sandraschi/monitoring-mcp/issues)
+
+[![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-purple.svg)](https://modelcontextprotocol.io/)
+[![Status](https://img.shields.io/badge/status-active-success.svg)](https://github.com/sandraschi/monitoring-mcp/pulse)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
 *A comprehensive FastMCP 2.14.3-powered monitoring server providing intelligent operations across Grafana, Prometheus, and Loki ecosystems with conversational AI assistance for DevOps workflows.*
 
@@ -379,6 +393,15 @@ print(f"Found {result['result_count']} metric series")
 | `alert_status` | Monitor alerting systems |
 
 ## 🔧 Development
+
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
+[![Type checking: mypy](https://img.shields.io/badge/mypy-checked-blue.svg)](http://mypy-lang.org/)
+
+[![pytest](https://img.shields.io/badge/testing-pytest-green.svg)](https://github.com/pytest-dev/pytest)
+[![asyncio](https://img.shields.io/badge/asyncio-compatible-blue.svg)](https://docs.python.org/3/library/asyncio.html)
+[![FastAPI](https://img.shields.io/badge/framework-FastAPI-009688.svg)](https://fastapi.tiangolo.com/)
 
 ### Setup Development Environment
 
