@@ -1,0 +1,187 @@
+# Zed Extension Configuration for Monitoring MCP
+
+name = "monitoring-mcp"
+version = "0.1.0"
+schema_version = 1
+authors = ["Sandra Schi <sandra.schi@example.com>"]
+description = "FastMCP 2.14.3-powered monitoring server for Grafana, Prometheus, and Loki"
+repository = "https://github.com/sandraschi/monitoring-mcp"
+
+[servers.monitoring]
+# MCP server command and arguments
+command = "python"
+args = ["-m", "monitoring_mcp"]
+
+# Environment variables (users should set these)
+env = { }
+
+# Optional: Specify supported languages/contexts
+languages = ["python", "javascript", "typescript", "go", "rust", "java"]
+
+# Optional: Specify when this server should be activated
+activation = """
+This MCP server provides comprehensive monitoring capabilities across Grafana, Prometheus, and Loki.
+It excels at:
+- Grafana dashboard management and analysis
+- Prometheus metrics querying and alerting
+- Loki log analysis and pattern detection
+- Cross-system correlation and root cause analysis
+- System health monitoring and diagnostics
+
+Activate this server when working with:
+- DevOps and infrastructure monitoring
+- Performance analysis and troubleshooting
+- Log analysis and debugging
+- System health assessment
+- Incident response and root cause analysis
+"""
+
+# Optional: Specify tools that require special permissions or setup
+[servers.monitoring.tools]
+grafana_management = """
+Grafana dashboard and data source management.
+Requires Grafana API access with appropriate permissions.
+"""
+prometheus_monitoring = """
+Prometheus metrics querying and alert management.
+Requires Prometheus API access.
+"""
+loki_logging = """
+Loki log analysis and pattern detection.
+Requires Loki API access.
+"""
+cross_system_correlation = """
+Cross-system incident analysis and correlation.
+Requires access to multiple monitoring systems.
+"""
+monitoring_status = """
+System health monitoring and diagnostics.
+May require elevated permissions for system-level checks.
+"""
+
+# Optional: Example configurations for different environments
+[servers.monitoring.examples.local]
+description = "Local development setup"
+env = { }
+
+[servers.monitoring.examples.docker]
+description = "Docker Compose setup"
+env = {
+  "MONITORING_MCP_GRAFANA_URL": "http://grafana:3000",
+  "MONITORING_MCP_PROMETHEUS_URL": "http://prometheus:9090",
+  "MONITORING_MCP_LOKI_URL": "http://loki:3100"
+}
+
+[servers.monitoring.examples.kubernetes]
+description = "Kubernetes cluster setup"
+env = {
+  "MONITORING_MCP_GRAFANA_URL": "http://grafana.monitoring.svc.cluster.local:3000",
+  "MONITORING_MCP_PROMETHEUS_URL": "http://prometheus.monitoring.svc.cluster.local:9090",
+  "MONITORING_MCP_LOKI_URL": "http://loki.monitoring.svc.cluster.local:3100"
+}
+
+[servers.monitoring.examples.cloud]
+description = "Cloud-managed monitoring services"
+env = {
+  "MONITORING_MCP_GRAFANA_URL": "https://your-org.grafana.net",
+  "MONITORING_MCP_PROMETHEUS_URL": "https://prometheus-prod.your-org.com",
+  "MONITORING_MCP_LOKI_URL": "https://loki-prod.your-org.com"
+}
+
+# Optional: Health check configuration
+[servers.monitoring.health]
+# Command to check if the server is healthy
+check_command = "python -c \"import monitoring_mcp; print('healthy')\""
+# Expected output for healthy status
+check_output = "healthy"
+# Timeout for health check in seconds
+timeout = 10
+
+# Optional: Resource requirements
+[servers.monitoring.resources]
+# Memory requirements
+memory_mb = 256
+# CPU requirements (as a fraction of a core, e.g., 0.5 = half a core)
+cpu_cores = 0.5
+# Disk space requirements in MB
+disk_mb = 100
+
+# Optional: Dependencies and prerequisites
+[servers.monitoring.dependencies]
+python = ">=3.10"
+required_packages = [
+  "fastmcp>=2.14.3",
+  "httpx",
+  "pydantic>=2.0.0",
+  "grafana-api",
+  "prometheus-api-client"
+]
+optional_packages = [
+  "pandas",
+  "plotly",
+  "numpy"
+]
+
+# Optional: Troubleshooting information
+[servers.monitoring.troubleshooting]
+common_issues = [
+  {
+    name = "Connection refused",
+    description = "Cannot connect to monitoring services",
+    solution = "Check that Grafana, Prometheus, and Loki are running and accessible. Verify URLs in environment variables."
+  },
+  {
+    name = "Authentication failed",
+    description = "API authentication errors",
+    solution = "Verify API keys and credentials. Check that the user has appropriate permissions."
+  },
+  {
+    name = "Timeout errors",
+    description = "Requests timing out",
+    solution = "Increase MONITORING_MCP_REQUEST_TIMEOUT or check network connectivity."
+  },
+  {
+    name = "Large result sets",
+    description = "Queries returning too much data",
+    solution = "Enable sampling with MONITORING_MCP_ENABLE_SAMPLING=true or narrow query time ranges."
+  }
+]
+
+# Optional: Integration guides
+[servers.monitoring.integrations]
+grafana = {
+  title = "Grafana Integration",
+  description = "Dashboard management and visualization",
+  docs_url = "https://github.com/sandraschi/monitoring-mcp/docs/monitoring-tools/grafana-integration.md"
+}
+prometheus = {
+  title = "Prometheus Integration",
+  description = "Metrics querying and alerting",
+  docs_url = "https://github.com/sandraschi/monitoring-mcp/docs/monitoring-tools/prometheus-integration.md"
+}
+loki = {
+  title = "Loki Integration",
+  description = "Log analysis and correlation",
+  docs_url = "https://github.com/sandraschi/monitoring-mcp/docs/monitoring-tools/loki-integration.md"
+}
+
+# Optional: Version compatibility matrix
+[servers.monitoring.compatibility]
+grafana = ">=8.0.0"
+prometheus = ">=2.30.0"
+loki = ">=2.4.0"
+fastmcp = ">=2.14.3"
+
+# Optional: Performance characteristics
+[servers.monitoring.performance]
+average_response_time_ms = 500
+max_concurrent_requests = 10
+memory_usage_mb = 256
+cpu_usage_percent = 5
+
+# Optional: Security considerations
+[servers.monitoring.security]
+requires_api_keys = true
+network_access_required = true
+sensitive_data_handling = "encrypted"
+audit_logging = true

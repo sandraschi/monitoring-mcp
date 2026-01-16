@@ -1,0 +1,130 @@
+version: '3.8'
+
+services:
+  monitoring-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: monitoring-mcp
+    ports:
+      - "8000:8000"
+    environment:
+      # Monitoring endpoints (adjust for your setup)
+      - MONITORING_MCP_GRAFANA_URL=http://grafana:3000
+      - MONITORING_MCP_PROMETHEUS_URL=http://prometheus:9090
+      - MONITORING_MCP_LOKI_URL=http://loki:3100
+
+      # Authentication (set these in .env file)
+      # - MONITORING_MCP_GRAFANA_API_KEY=your_api_key
+      # - MONITORING_MCP_GRAFANA_USERNAME=admin
+      # - MONITORING_MCP_GRAFANA_PASSWORD=your_password
+
+      # Performance settings
+      - MONITORING_MCP_REQUEST_TIMEOUT=30
+      - MONITORING_MCP_MAX_CONCURRENT_REQUESTS=10
+      - MONITORING_MCP_MAX_RESULTS_LIMIT=1000
+
+      # Sampling for large datasets
+      - MONITORING_MCP_ENABLE_SAMPLING=true
+      - MONITORING_MCP_SAMPLING_THRESHOLD=10000
+      - MONITORING_MCP_SAMPLING_RATE=0.1
+
+      # Logging
+      - MONITORING_MCP_LOG_LEVEL=INFO
+
+    volumes:
+      # Mount local storage for persistent data
+      - ./data:/app/.monitoring-mcp
+
+    networks:
+      - monitoring-network
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import monitoring_mcp; print('healthy')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+# Optional: Include monitoring stack for development/testing
+# Uncomment the following services if you want a complete monitoring stack
+
+#   grafana:
+#     image: grafana/grafana:latest
+#     container_name: monitoring-grafana
+#     ports:
+#       - "3000:3000"
+#     environment:
+#       - GF_SECURITY_ADMIN_PASSWORD=admin
+#     volumes:
+#       - grafana_data:/var/lib/grafana
+#       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+#       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+#     networks:
+#       - monitoring-network
+#     restart: unless-stopped
+
+#   prometheus:
+#     image: prom/prometheus:latest
+#     container_name: monitoring-prometheus
+#     ports:
+#       - "9090:9090"
+#     volumes:
+#       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+#       - prometheus_data:/prometheus
+#     command:
+#       - '--config.file=/etc/prometheus/prometheus.yml'
+#       - '--storage.tsdb.path=/prometheus'
+#       - '--web.console.libraries=/etc/prometheus/console_libraries'
+#       - '--web.console.templates=/etc/prometheus/consoles'
+#       - '--storage.tsdb.retention.time=200h'
+#       - '--web.enable-lifecycle'
+#     networks:
+#       - monitoring-network
+#     restart: unless-stopped
+
+#   loki:
+#     image: grafana/loki:latest
+#     container_name: monitoring-loki
+#     ports:
+#       - "3100:3100"
+#     volumes:
+#       - ./monitoring/loki/loki.yml:/etc/loki/local-config.yaml
+#       - loki_data:/loki
+#     command: -config.file=/etc/loki/local-config.yaml
+#     networks:
+#       - monitoring-network
+#     restart: unless-stopped
+
+#   promtail:
+#     image: grafana/promtail:latest
+#     container_name: monitoring-promtail
+#     volumes:
+#       - ./monitoring/promtail/promtail.yml:/etc/promtail/config.yml
+#       - /var/log:/var/log:ro
+#       - /var/lib/docker/containers:/var/lib/docker/containers:ro
+#     command: -config.file=/etc/promtail/config.yml
+#     networks:
+#       - monitoring-network
+#     restart: unless-stopped
+
+networks:
+  monitoring-network:
+    driver: bridge
+
+# volumes:
+#   grafana_data:
+#   prometheus_data:
+#   loki_data:
