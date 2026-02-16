@@ -152,3 +152,24 @@ Thumbs.db
 *.tmp
 *.temp
 .cache/
+# Node.js / Vite
+node_modules/
+dist/
+dist-ssr/
+*.local
+.eslintcache
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.next/
+out/
+
+# IDE and OS-specific
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
