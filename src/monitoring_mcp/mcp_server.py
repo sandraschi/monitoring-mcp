@@ -12,23 +12,46 @@ Features:
 - Modern Python with full type annotations and async patterns
 """
 
+import asyncio
 import logging
 
 from fastmcp import FastMCP
 from py_key_value_aio import DiskStore
 
+# from .auth import authenticate # Handled by FastMCP web_app internally if needed, but dependencies=[Depends(authenticate)] was removed in favor of FastMCP standard
 from .config import MonitoringConfig
 from .tools.correlation_tool import register_correlation_tool
 from .tools.grafana_tool import register_grafana_tool
 from .tools.loki_tool import register_loki_tool
 from .tools.prometheus_tool import register_prometheus_tool
 from .tools.status_tool import register_status_tool
+from .transport import run_server
+from .web import setup_webapp
 
-# Configure structured logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 logger = logging.getLogger(__name__)
+
+# Global FastMCP instance
+mcp = FastMCP(
+    name="monitoring-mcp",
+    version="0.1.0",
+    description="Intelligent monitoring operations for Grafana, Prometheus, and Loki",
+    instructions="""
+    You are an expert monitoring assistant with deep knowledge of Grafana, Prometheus, and Loki.
+    Provide conversational, actionable responses that help users understand their monitoring data.
+
+    When analyzing metrics or logs:
+    1. Always provide context about what the data means
+    2. Suggest actionable insights and next steps
+    3. Use clear, non-technical language when possible
+    4. Include specific values and trends
+    5. Offer recommendations for improvement
+
+    For complex queries, break them down step-by-step and explain the reasoning.
+    """,
+)
+
+# SOTA Integration: Setup webapp bridge
+setup_webapp(mcp.web_app, mcp_app=mcp)
 
 
 class MonitoringMCPServer:
@@ -47,24 +70,7 @@ class MonitoringMCPServer:
             config: Optional configuration override. Defaults to environment-based config.
         """
         self.config = config or MonitoringConfig()
-        self.mcp = FastMCP(
-            name="monitoring-mcp",
-            version="0.1.0",
-            description="Intelligent monitoring operations for Grafana, Prometheus, and Loki",
-            instructions="""
-            You are an expert monitoring assistant with deep knowledge of Grafana, Prometheus, and Loki.
-            Provide conversational, actionable responses that help users understand their monitoring data.
-
-            When analyzing metrics or logs:
-            1. Always provide context about what the data means
-            2. Suggest actionable insights and next steps
-            3. Use clear, non-technical language when possible
-            4. Include specific values and trends
-            5. Offer recommendations for improvement
-
-            For complex queries, break them down step-by-step and explain the reasoning.
-            """,
-        )
+        self.mcp = mcp  # Use global instance
 
         # Initialize persistent storage
         self.storage = DiskStore(
@@ -97,67 +103,21 @@ class MonitoringMCPServer:
         logger.info("All monitoring tools registered successfully")
 
     async def run(self) -> None:
-        """
-        Start the MCP server and begin listening for requests.
-
-        This method handles the complete server lifecycle including
-        startup, request processing, and graceful shutdown.
-        """
-        logger.info("Starting Monitoring MCP server...")
+        """Main entry point for the Monitoring Hub MCP server."""
+        # Initialize storage if needed
+        await self.storage.initialize()
 
         try:
-            # Initialize storage if needed
-            await self.storage.initialize()
-
-            # Start the MCP server
-            await self.mcp.run()
-
-        except KeyboardInterrupt:
-            logger.info("Received shutdown signal")
-        except Exception as e:
-            logger.error(f"Critical error in MCP server: {e}", exc_info=True)
-            raise
+            run_server(self.mcp, server_name="monitoring-mcp")
         finally:
-            # Cleanup resources
             await self._cleanup()
 
-    async def _cleanup(self) -> None:
-        """Clean up resources and close connections."""
-        try:
-            await self.storage.close()
-            logger.info("Storage connections closed")
-        except Exception as e:
-            logger.warning(f"Error during cleanup: {e}")
 
-
-# Convenience function for direct usage
-async def create_monitoring_server(
-    grafana_url: str | None = None,
-    prometheus_url: str | None = None,
-    loki_url: str | None = None,
-) -> MonitoringMCPServer:
-    """
-    Create a monitoring MCP server with custom endpoints.
-
-    Args:
-        grafana_url: Custom Grafana URL
-        prometheus_url: Custom Prometheus URL
-        loki_url: Custom Loki URL
-
-    Returns:
-        Configured MonitoringMCPServer instance
-    """
-    config = MonitoringConfig(
-        grafana_url=grafana_url,
-        prometheus_url=prometheus_url,
-        loki_url=loki_url,
-    )
-    return MonitoringMCPServer(config)
+def run() -> None:
+    """Synchronous entry point for compatibility."""
+    server = MonitoringMCPServer()
+    asyncio.run(server.run())
 
 
 if __name__ == "__main__":
-    # Allow direct execution for development
-    import asyncio
-
-    server = MonitoringMCPServer()
-    asyncio.run(server.run())
+    run()

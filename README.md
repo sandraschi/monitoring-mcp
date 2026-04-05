@@ -22,45 +22,45 @@
 
 *A comprehensive FastMCP 2.14.3-powered monitoring server providing intelligent operations across Grafana, Prometheus, and Loki ecosystems with conversational AI assistance for DevOps workflows.*
 
-## 🚀 Features
+##  Features
 
 ### **FastMCP 2.14.3 Integration**
-- ✅ **Conversational Tool Returns** - AI-friendly responses with actionable insights
-- ✅ **Sampling Capabilities** - Intelligent data sampling for large result sets
-- ✅ **Persistent Storage** - DiskStore backend for configuration and state
-- ✅ **Production-Ready** - Built for high-performance monitoring operations
+-  **Conversational Tool Returns** - AI-friendly responses with actionable insights
+-  **Sampling Capabilities** - Intelligent data sampling for large result sets
+-  **Persistent Storage** - DiskStore backend for configuration and state
+-  **Production-Ready** - Built for high-performance monitoring operations
 
 ### **Comprehensive Monitoring Tools**
 
-#### 🔍 **Grafana Management** (`grafana_management`)
+####  **Grafana Management** (`grafana_management`)
 - **Dashboard Operations**: List, create, update, delete, and analyze dashboards
 - **Data Source Queries**: Execute queries against configured data sources
 - **Panel Management**: Add and modify dashboard panels
 - **Alert Configuration**: Set up alerting rules for dashboard metrics
 - **AI-Powered Analysis**: Intelligent dashboard optimization suggestions
 
-#### 📊 **Prometheus Monitoring** (`prometheus_monitoring`)
+####  **Prometheus Monitoring** (`prometheus_monitoring`)
 - **Metric Queries**: Execute PromQL queries with intelligent sampling
 - **Range Queries**: Time-series analysis with automatic optimization
 - **Target Health**: Monitor scrape target status and connectivity
 - **Alert Management**: List active alerts and manage alert rules
 - **Performance Analysis**: Query optimization and bottleneck detection
 
-#### 📝 **Loki Logging** (`loki_logging`)
+####  **Loki Logging** (`loki_logging`)
 - **Log Queries**: Execute LogQL queries with pattern recognition
 - **Real-time Tailing**: Stream live logs with configurable limits
 - **Anomaly Detection**: AI-powered log pattern analysis
 - **Error Correlation**: Link error logs with system events
 - **Request Tracing**: Follow request flows through log streams
 
-#### 🔗 **Cross-System Correlation** (`cross_system_correlation`)
+####  **Cross-System Correlation** (`cross_system_correlation`)
 - **Incident Analysis**: Correlate metrics, logs, and traces for root cause analysis
 - **Performance Correlation**: Link performance metrics with system events
 - **Error Correlation**: Connect error patterns across systems
 - **Health Assessment**: Comprehensive system health scoring
 - **Predictive Insights**: AI-powered trend analysis and recommendations
 
-#### 🏥 **Status & Health Monitoring** (`monitoring_status`)
+####  **Status & Health Monitoring** (`monitoring_status`)
 - **System Health Checks**: Comprehensive health assessment across all systems
 - **Connectivity Testing**: Verify connections to all monitoring components
 - **Configuration Validation**: Validate system configurations and settings
@@ -81,7 +81,7 @@
 - **Error Recovery**: Graceful degradation and automatic retry logic
 - **Security**: Authentication support with API key management
 
-## 💬 Conversational Usage Examples
+##  Conversational Usage Examples
 
 These examples show how users interact with the Monitoring MCP server through natural language conversations, as you would in Claude Desktop or other MCP-enabled applications.
 
@@ -90,14 +90,14 @@ These examples show how users interact with the Monitoring MCP server through na
 **User:** "Check the overall health of my monitoring system"
 
 **Monitoring MCP Response:**
-> "I found your monitoring system is mostly healthy! ✅
+> "I found your monitoring system is mostly healthy! 
 >
 > **System Status: Degraded** (3 out of 4 components healthy)
 >
-> **Grafana**: ✅ Healthy (12 dashboards, 3 data sources configured)
-> **Prometheus**: ✅ Healthy (247 targets, 98% up)
-> **Loki**: ❌ Unhealthy (Connection timeout - check if Loki service is running)
-> **Overall**: ⚠️ 1 issue needs attention
+> **Grafana**:  Healthy (12 dashboards, 3 data sources configured)
+> **Prometheus**:  Healthy (247 targets, 98% up)
+> **Loki**:  Unhealthy (Connection timeout - check if Loki service is running)
+> **Overall**:  1 issue needs attention
 >
 > **Recommendation:** Start the Loki service and run connectivity tests to verify the fix."
 
@@ -115,7 +115,7 @@ These examples show how users interact with the Monitoring MCP server through na
 > - **Metrics**: Memory usage spiked to 92% on web-01 server
 > - **Logs**: Multiple "GC overhead limit exceeded" errors in web-api service
 >
-> **Root Cause Identified:** 🏆
+> **Root Cause Identified:** 
 > Memory pressure triggered garbage collection storms, causing response delays.
 >
 > **Evidence:**
@@ -137,7 +137,7 @@ These examples show how users interact with the Monitoring MCP server through na
 **Monitoring MCP Response:**
 > "I've analyzed your database performance over the past week. Here's what I found:
 >
-> **Performance Trend:** 📈 23% degradation in query response times
+> **Performance Trend:**  23% degradation in query response times
 >
 > **Key Metrics:**
 > - Average query time: 450ms (up from 320ms)
@@ -168,7 +168,7 @@ These examples show how users interact with the Monitoring MCP server through na
 **Monitoring MCP Response:**
 > "I've analyzed your authentication failure patterns across the last 24 hours:
 >
-> **Summary:** 🔍 1,247 failed login attempts detected
+> **Summary:**  1,247 failed login attempts detected
 >
 > **Top Failure Reasons:**
 > - **Invalid Credentials**: 68% (851 attempts) - normal user errors
@@ -176,7 +176,7 @@ These examples show how users interact with the Monitoring MCP server through na
 > - **Expired Tokens**: 8% (100 attempts) - session timeouts
 > - **IP Blocked**: 2% (21 attempts) - security measures
 >
-> **Suspicious Patterns Detected:** ⚠️
+> **Suspicious Patterns Detected:** 
 > - **IP 192.168.1.100**: 45 consecutive failures in 10 minutes
 > - **User 'admin'**: Targeted by 89 different IPs
 > - **Time Pattern**: Peak failures between 2-4 AM UTC
@@ -194,7 +194,7 @@ These examples show how users interact with the Monitoring MCP server through na
 **User:** "Create a dashboard showing our service health overview"
 
 **Monitoring MCP Response:**
-> "I'll create a comprehensive service health dashboard for you! 📊
+> "I'll create a comprehensive service health dashboard for you! 
 >
 > **Dashboard Created:** 'Service Health Overview'
 > **UID:** svc-health-2024
@@ -209,9 +209,9 @@ These examples show how users interact with the Monitoring MCP server through na
 > 6. **Top Error Sources** - Services generating most errors
 >
 > **Data Sources Connected:**
-> - ✅ Prometheus (metrics)
-> - ✅ Loki (logs)
-> - ✅ Grafana (visualization)
+> -  Prometheus (metrics)
+> -  Loki (logs)
+> -  Grafana (visualization)
 >
 > **Auto-Refresh:** 30 seconds
 > **Time Range:** Last 1 hour
@@ -229,42 +229,42 @@ These examples show how users interact with the Monitoring MCP server through na
 **Monitoring MCP Response:**
 > "Let me check your monitoring system configuration across all components:
 >
-> **Configuration Validation Results:** ✅ **All Valid**
+> **Configuration Validation Results:**  **All Valid**
 >
 > **Grafana (http://grafana:3000):**
-> - ✅ API connectivity confirmed
-> - ✅ 3 data sources configured (Prometheus, Loki, TestData)
-> - ✅ 12 dashboards available
-> - ✅ Admin permissions verified
+> -  API connectivity confirmed
+> -  3 data sources configured (Prometheus, Loki, TestData)
+> -  12 dashboards available
+> -  Admin permissions verified
 >
 > **Prometheus (http://prometheus:9090):**
-> - ✅ Query API responding
-> - ✅ 247 scrape targets configured
-> - ✅ 98% target health (243/247 up)
-> - ✅ 45 alerting rules active
+> -  Query API responding
+> -  247 scrape targets configured
+> -  98% target health (243/247 up)
+> -  45 alerting rules active
 >
 > **Loki (http://loki:3100):**
-> - ✅ LogQL API functional
-> - ✅ 8 distinct log streams
-> - ✅ 2.3GB logs ingested (last 24h)
-> - ✅ Retention policy: 30 days
+> -  LogQL API functional
+> -  8 distinct log streams
+> -  2.3GB logs ingested (last 24h)
+> -  Retention policy: 30 days
 >
 > **Cross-System Integration:**
-> - ✅ Grafana can query Prometheus data
-> - ✅ Grafana can query Loki logs
-> - ✅ Alert routing configured
-> - ✅ Dashboard links functional
+> -  Grafana can query Prometheus data
+> -  Grafana can query Loki logs
+> -  Alert routing configured
+> -  Dashboard links functional
 >
 > **Recommendations:**
 > 1. **4 unhealthy targets** in Prometheus need investigation
 > 2. **Consider increasing retention** if you need longer log history
 > 3. **Add more alerting rules** for critical services
 >
-> Your monitoring stack is properly configured and operational! 🎉"
+> Your monitoring stack is properly configured and operational! "
 
 ---
 
-## 🔧 API Usage Examples
+##  API Usage Examples
 
 For developers integrating directly with the MCP tools:
 
@@ -322,8 +322,28 @@ await cross_system_correlation(
 await monitoring_status(operation="system_health")
 ```
 
-## 📦 Installation
+##  Installation
 
+### Prerequisites
+- [uv](https://docs.astral.sh/uv/) installed (RECOMMENDED)
+- Python 3.12+
+
+###  Quick Start
+Run immediately via `uvx`:
+```bash
+uvx monitoring-mcp
+```
+
+###  Claude Desktop Integration
+Add to your `claude_desktop_config.json`:
+```json
+"mcpServers": {
+  "monitoring-mcp": {
+    "command": "uv",
+    "args": ["--directory", "D:/Dev/repos/monitoring-mcp", "run", "monitoring-mcp"]
+  }
+}
+```
 ### Prerequisites
 - Python 3.10+
 - Access to Grafana, Prometheus, and Loki instances
@@ -340,7 +360,7 @@ pip install monitoring-mcp
 ```bash
 git clone https://github.com/sandraschi/monitoring-mcp.git
 cd monitoring-mcp
-pip install -e .[dev]
+uv pip install -e .[dev]
 ```
 
 ### Configuration
@@ -369,7 +389,7 @@ MONITORING_MCP_SAMPLING_THRESHOLD=10000
 MONITORING_MCP_SAMPLING_RATE=0.1
 ```
 
-## 🔧 Configuration
+##  Configuration
 
 ### Environment Variables
 
@@ -392,7 +412,7 @@ MONITORING_MCP_SAMPLING_RATE=0.1
 - Currently use direct HTTP access (no authentication required for local setups)
 - For production deployments, configure reverse proxies with authentication
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### 1. Start the Server
 
@@ -439,42 +459,42 @@ result = await prometheus_monitoring(
 print(f"Found {result['result_count']} metric series")
 ```
 
-## 📊 Monitoring Architecture
+##  Monitoring Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                 Monitoring MCP Server                   │
-│  ┌─────────────────────────────────────────────────┐    │
-│  │             Portmanteau Tools                    │    │
-│  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │    │
-│  │  │  Grafana    │ │ Prometheus  │ │    Loki     │ │    │
-│  │  │Management   │ │ Monitoring  │ │   Logging   │ │    │
-│  │  └─────────────┘ └─────────────┘ └─────────────┘ │    │
-│  └─────────────────────────────────────────────────┘    │
-└─────────────────┼───────────────────────────────────────┘
-                  │
-        ┌─────────┼─────────┐
-        │         │         │
-┌───────▼─────┐ ┌─▼──────┐ ┌▼────────┐
-│   Grafana   │ │Promethe│ │  Loki   │
-│ Dashboards  │ │ us Met- │ │   Logs  │
-│   & Panels  │ │ rics &  │ │Analysis │
-│             │ │ Alerts  │ │         │
-└─────────────┘ └────────┘ └─────────┘
-                  ▲
-                  │
-     ┌────────────┼────────────┐
-     │   Cross-System          │
-     │   Correlation Engine    │
-     │                         │
-     │ • Incident Analysis     │
-     │ • Root Cause Detection  │
-     │ • Performance Insights  │
-     │ • Health Assessment     │
-     └─────────────────────────┘
+
+                 Monitoring MCP Server                   
+      
+               Portmanteau Tools                        
+           
+      Grafana      Prometheus       Loki          
+    Management     Monitoring      Logging        
+           
+      
+
+                  
+        
+                          
+  
+   Grafana    Promethe   Loki   
+ Dashboards    us Met-     Logs  
+   & Panels    rics &   Analysis 
+               Alerts            
+  
+                  
+                  
+     
+        Cross-System          
+        Correlation Engine    
+                              
+       Incident Analysis     
+       Root Cause Detection  
+       Performance Insights  
+       Health Assessment     
+     
 ```
 
-## 🔍 Tool Reference
+##  Tool Reference
 
 ### Grafana Management (`grafana_management`)
 
@@ -538,7 +558,7 @@ print(f"Found {result['result_count']} metric series")
 | `data_flow_status` | Check data flow health |
 | `alert_status` | Monitor alerting systems |
 
-## 🔧 Development
+##  Development
 
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
@@ -553,7 +573,7 @@ print(f"Found {result['result_count']} metric series")
 
 ```bash
 # Install development dependencies
-pip install -e .[dev]
+uv pip install -e .[dev]
 
 # Run tests
 pytest
@@ -592,12 +612,12 @@ docker build -t monitoring-mcp:dev -f Dockerfile.dev .
 docker run -p 8000:8000 -v $(pwd):/app monitoring-mcp:dev
 ```
 
-## 📚 Documentation
+##  Documentation
 
 ### Guides and Documentation
 - **[API Reference](docs/api/)** - Complete API documentation
 - **[Grafana Integration](docs/grafana/)** - Grafana-specific guides
-- **[Prometheus Queries](docs/prometheus/)** - PromQL best practices
+- **[Prometheus Queries](docs/prometheus/)** - PromQL  practices
 - **[Loki Queries](docs/loki/)** - LogQL patterns and examples
 - **[Correlation Analysis](docs/correlation/)** - Cross-system analysis techniques
 - **[Troubleshooting](docs/troubleshooting/)** - Common issues and solutions
@@ -605,16 +625,16 @@ docker run -p 8000:8000 -v $(pwd):/app monitoring-mcp:dev
 ### Architecture Documentation
 - **[System Architecture](docs/architecture/)** - System design and components
 - **[Performance Guide](docs/performance/)** - Optimization and scaling
-- **[Security](docs/security/)** - Security considerations and best practices
+- **[Security](docs/security/)** - Security considerations and  practices
 - **[Deployment](docs/deployment/)** - Production deployment guides
 
-## 🤝 Contributing
+##  Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
 ### Development Workflow
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+2. Create a feature branch (`git checkout -b feature/-feature`)
 3. Make your changes with comprehensive tests
 4. Run the full test suite: `make test-all`
 5. Update documentation as needed
@@ -627,11 +647,11 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 - **Conversational**: Tool responses should be AI-friendly
 - **Documentation**: Comprehensive docstrings and examples
 
-## 📄 License
+##  License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+##  Acknowledgments
 
 - **FastMCP Team** - For the excellent MCP framework
 - **Grafana Labs** - For Grafana, Prometheus, and Loki
@@ -640,4 +660,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Built with ❤️ using FastMCP 2.14.3 for intelligent monitoring operations**
+**Built with  using FastMCP 2.14.3 for intelligent monitoring operations**

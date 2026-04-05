@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: monitoring-mcp
     ports:
-      - "8000:8000"
+      - "10786:8000"
     environment:
       # Monitoring endpoints (adjust for your setup)
       - MONITORING_MCP_GRAFANA_URL=http://grafana:3000

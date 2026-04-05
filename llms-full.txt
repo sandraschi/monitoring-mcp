@@ -1,0 +1,2526 @@
+# monitoring-mcp
+> *A comprehensive FastMCP 2.14.3-powered monitoring server providing intelligent operations across Grafana, Prometheus, and Loki ecosystems with conversational AI assistance for DevOps workflows.* - ✅ ...
+
+Generated on: 2026-03-03 00:01:31
+
+## Docs - Full Content
+
+### Readme
+Source: README.md
+```
+# Monitoring MCP Server
+
+[![CI](https://github.com/sandraschi/monitoring-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/sandraschi/monitoring-mcp/actions)
+[![codecov](https://codecov.io/gh/sandraschi/monitoring-mcp/branch/main/graph/badge.svg)](https://codecov.io/gh/sandraschi/monitoring-mcp)
+[![PyPI version](https://badge.fury.io/py/monitoring-mcp.svg)](https://pypi.org/project/monitoring-mcp/)
+[![PyPI downloads](https://img.shields.io/pypi/dm/monitoring-mcp)](https://pypi.org/project/monitoring-mcp/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+[![FastMCP](https://img.shields.io/badge/FastMCP-2.14.3+-blue.svg)](https://github.com/jlowin/fastmcp)
+[![Grafana](https://img.shields.io/badge/Grafana-Supported-orange.svg)](https://grafana.com)
+[![Prometheus](https://img.shields.io/badge/Prometheus-Supported-orange.svg)](https://prometheus.io)
+[![Loki](https://img.shields.io/badge/Loki-Supported-green.svg)](https://grafana.com/oss/loki/)
+
+[![GitHub Repo stars](https://img.shields.io/github/stars/sandraschi/monitoring-mcp?style=social)](https://github.com/sandraschi/monitoring-mcp)
+[![GitHub last commit](https://img.shields.io/github/last-commit/sandraschi/monitoring-mcp)](https://github.com/sandraschi/monitoring-mcp)
+[![GitHub issues](https://img.shields.io/github/issues/sandraschi/monitoring-mcp)](https://github.com/sandraschi/monitoring-mcp/issues)
+
+[![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-purple.svg)](https://modelcontextprotocol.io/)
+[![Status](https://img.shields.io/badge/status-active-success.svg)](https://github.com/sandraschi/monitoring-mcp/pulse)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+
+*A comprehensive FastMCP 2.14.3-powered monitoring server providing intelligent operations across Grafana, Prometheus, and Loki ecosystems with conversational AI assistance for DevOps workflows.*
+
+## 🚀 Features
+
+### **FastMCP 2.14.3 Integration**
+- ✅ **Conversational Tool Returns** - AI-friendly responses with actionable insights
+- ✅ **Sampling Capabilities** - Intelligent data sampling for large result sets
+- ✅ **Persistent Storage** - DiskStore backend for configuration and state
+- ✅ **Production-Ready** - Built for high-performance monitoring operations
+
+### **Comprehensive Monitoring Tools**
+
+#### 🔍 **Grafana Management** (`grafana_management`)
+- **Dashboard Operations**: List, create, update, delete, and analyze dashboards
+- **Data Source Queries**: Execute queries against configured data sources
+- **Panel Management**: Add and modify dashboard panels
+- **Alert Configuration**: Set up alerting rules for dashboard metrics
+- **AI-Powered Analysis**: Intelligent dashboard optimization suggestions
+
+#### 📊 **Prometheus Monitoring** (`prometheus_monitoring`)
+- **Metric Queries**: Execute PromQL queries with intelligent sampling
+- **Range Queries**: Time-series analysis with automatic optimization
+- **Target Health**: Monitor scrape target status and connectivity
+- **Alert Management**: List active alerts and manage alert rules
+- **Performance Analysis**: Query optimization and bottleneck detection
+
+#### 📝 **Loki Logging** (`loki_logging`)
+- **Log Queries**: Execute LogQL queries with pattern recognition
+- **Real-time Tailing**: Stream live logs with configurable limits
+- **Anomaly Detection**: AI-powered log pattern analysis
+- **Error Correlation**: Link error logs with system events
+- **Request Tracing**: Follow request flows through log streams
+
+#### 🔗 **Cross-System Correlation** (`cross_system_correlation`)
+- **Incident Analysis**: Correlate metrics, logs, and traces for root cause analysis
+- **Performance Correlation**: Link performance metrics with system events
+- **Error Correlation**: Connect error patterns across systems
+- **Health Assessment**: Comprehensive system health scoring
+- **Predictive Insights**: AI-powered trend analysis and recommendations
+
+#### 🏥 **Status & Health Monitoring** (`monitoring_status`)
+- **System Health Checks**: Comprehensive health assessment across all systems
+- **Connectivity Testing**: Verify connections to all monitoring components
+- **Configuration Validation**: Validate system configurations and settings
+- **Data Flow Monitoring**: Check data flow between monitoring systems
+- **Alert Status**: Monitor alerting system health and active alerts
+
+### **AI-Powered Intelligence**
+- **Conversational Responses**: Natural language summaries and actionable insights
+- **Intelligent Sampling**: Automatic data reduction for large datasets
+- **Root Cause Analysis**: AI-assisted incident investigation
+- **Optimization Recommendations**: Performance and configuration suggestions
+- **Pattern Recognition**: Automated anomaly detection and trend analysis
+
+### **Enterprise Features**
+- **Persistent Configuration**: Encrypted storage with platform-aware paths
+- **Rate Limiting**: Intelligent request throttling and error handling
+- **Structured Logging**: JSON-formatted logs with rich context
+- **Error Recovery**: Graceful degradation and automatic retry logic
+- **Security**: Authentication support with API key management
+
+## 💬 Conversational Usage Examples
+
+These examples show how users interact with the Monitoring MCP server through natural language conversations, as you would in Claude Desktop or other MCP-enabled applications.
+
+### **System Health Check Conversation**
+
+**User:** "Check the overall health of my monitoring system"
+
+**Monitoring MCP Response:**
+> "I found your monitoring system is mostly healthy! ✅
+>
+> **System Status: Degraded** (3 out of 4 components healthy)
+>
+> **Grafana**: ✅ Healthy (12 dashboards, 3 data sources configured)
+> **Prometheus**: ✅ Healthy (247 targets, 98% up)
+> **Loki**: ❌ Unhealthy (Connection timeout - check if Loki service is running)
+> **Overall**: ⚠️ 1 issue needs attention
+>
+> **Recommendation:** Start the Loki service and run connectivity tests to verify the fix."
+
+---
+
+### **Incident Investigation Conversation**
+
+**User:** "Our API response times spiked at 3:15 PM today. Can you help me investigate what happened?"
+
+**Monitoring MCP Response:**
+> "I'll investigate the API response time spike at 3:15 PM. Let me correlate metrics, logs, and system events.
+>
+> **Timeline Analysis:**
+> - **3:15 PM**: API latency jumped from 45ms to 890ms
+> - **Metrics**: Memory usage spiked to 92% on web-01 server
+> - **Logs**: Multiple "GC overhead limit exceeded" errors in web-api service
+>
+> **Root Cause Identified:** 🏆
+> Memory pressure triggered garbage collection storms, causing response delays.
+>
+> **Evidence:**
+> - Memory usage: 92% (threshold: 80%)
+> - GC pause time: 450ms (normal: <50ms)
+> - Error logs: 47 "GC overhead" exceptions in 5-minute window
+>
+> **Recommendations:**
+> 1. Scale up web-01 instance (currently t3.medium)
+> 2. Tune JVM GC settings (-XX:+UseG1GC -XX:MaxGCPauseMillis=100)
+> 3. Add memory monitoring alerts at 75% threshold"
+
+---
+
+### **Performance Analysis Conversation**
+
+**User:** "Why is our database query performance degraded this week?"
+
+**Monitoring MCP Response:**
+> "I've analyzed your database performance over the past week. Here's what I found:
+>
+> **Performance Trend:** 📈 23% degradation in query response times
+>
+> **Key Metrics:**
+> - Average query time: 450ms (up from 320ms)
+> - Slow queries (>1s): 15% of total (up from 8%)
+> - Connection pool utilization: 89% (up from 72%)
+>
+> **Correlated Events:**
+> - **Tuesday 2:30 PM**: Database restart (maintenance window)
+> - **Wednesday**: Index rebuild completed (expected performance dip)
+> - **Friday**: Connection pool exhausted multiple times
+>
+> **Performance Insights:**
+> 1. **Connection Pool Contention**: 89% utilization suggests pool size needs increasing
+> 2. **Index Fragmentation**: Recent rebuild shows 40% improvement potential
+> 3. **Memory Pressure**: Buffer cache hit ratio dropped to 87%
+>
+> **Action Items:**
+> - Increase connection pool size by 25%
+> - Schedule regular index maintenance
+> - Add monitoring for connection pool utilization >80%"
+
+---
+
+### **Log Analysis Conversation**
+
+**User:** "I'm seeing authentication failures in my logs. Can you analyze the patterns?"
+
+**Monitoring MCP Response:**
+> "I've analyzed your authentication failure patterns across the last 24 hours:
+>
+> **Summary:** 🔍 1,247 failed login attempts detected
+>
+> **Top Failure Reasons:**
+> - **Invalid Credentials**: 68% (851 attempts) - normal user errors
+> - **Account Locked**: 22% (275 attempts) - brute force protection
+> - **Expired Tokens**: 8% (100 attempts) - session timeouts
+> - **IP Blocked**: 2% (21 attempts) - security measures
+>
+> **Suspicious Patterns Detected:** ⚠️
+> - **IP 192.168.1.100**: 45 consecutive failures in 10 minutes
+> - **User 'admin'**: Targeted by 89 different IPs
+> - **Time Pattern**: Peak failures between 2-4 AM UTC
+>
+> **Security Recommendations:**
+> 1. Block IP 192.168.1.100 temporarily (brute force attempt)
+> 2. Implement progressive delays on failed logins
+> 3. Add geo-blocking for suspicious regions
+> 4. Enable MFA for admin accounts"
+
+---
+
+### **Dashboard Creation Conversation**
+
+**User:** "Create a dashboard showing our service health overview"
+
+**Monitoring MCP Response:**
+> "I'll create a comprehensive service health dashboard for you! 📊
+>
+> **Dashboard Created:** 'Service Health Overview'
+> **UID:** svc-health-2024
+>
+> **Panels Included:**
+>
+> 1. **Service Status Grid** - Real-time health of all services
+> 2. **Error Rate Trends** - 1h, 24h, 7d error rate graphs
+> 3. **Response Time Distribution** - P50, P95, P99 latency metrics
+> 4. **Resource Utilization** - CPU, Memory, Disk, Network usage
+> 5. **Alert Summary** - Active alerts by severity
+> 6. **Top Error Sources** - Services generating most errors
+>
+> **Data Sources Connected:**
+> - ✅ Prometheus (metrics)
+> - ✅ Loki (logs)
+> - ✅ Grafana (visualization)
+>
+> **Auto-Refresh:** 30 seconds
+> **Time Range:** Last 1 hour
+>
+> **Access:** Available at `/d/svc-health-2024/service-health-overview`
+>
+> The dashboard is now live and will help you monitor service health at a glance!"
+
+---
+
+### **Configuration Validation Conversation**
+
+**User:** "Validate that my monitoring configuration is correct"
+
+**Monitoring MCP Response:**
+> "Let me check your monitoring system configuration across all components:
+>
+> **Configuration Validation Results:** ✅ **All Valid**
+>
+> **Grafana (http://grafana:3000):**
+> - ✅ API connectivity confirmed
+> - ✅ 3 data sources configured (Prometheus, Loki, TestData)
+> - ✅ 12 dashboards available
+> - ✅ Admin permissions verified
+>
+> **Prometheus (http://prometheus:9090):**
+> - ✅ Query API responding
+> - ✅ 247 scrape targets configured
+> - ✅ 98% target health (243/247 up)
+> - ✅ 45 alerting rules active
+>
+> **Loki (http://loki:3100):**
+> - ✅ LogQL API functional
+> - ✅ 8 distinct log streams
+> - ✅ 2.3GB logs ingested (last 24h)
+> - ✅ Retention policy: 30 days
+>
+> **Cross-System Integration:**
+> - ✅ Grafana can query Prometheus data
+> - ✅ Grafana can query Loki logs
+> - ✅ Alert routing configured
+> - ✅ Dashboard links functional
+>
+> **Recommendations:**
+> 1. **4 unhealthy targets** in Prometheus need investigation
+> 2. **Consider increasing retention** if you need longer log history
+> 3. **Add more alerting rules** for critical services
+>
+> Your monitoring stack is properly configured and operational! 🎉"
+
+---
+
+## 🔧 API Usage Examples
+
+For developers integrating directly with the MCP tools:
+
+### Grafana Dashboard Management
+
+```python
+# List all dashboards
+await grafana_management(operation="list_dashboards")
+
+# Create a new dashboard
+await grafana_management(
+    operation="create_dashboard",
+    dashboard_data={
+        "title": "System Overview",
+        "tags": ["system", "overview"],
+        "panels": [...]
+    }
+)
+```
+
+### Prometheus Metrics Analysis
+
+```python
+# Query system CPU usage
+await prometheus_monitoring(
+    operation="query_metrics",
+    query="100 - (avg by(instance) (irate(node_cpu_seconds_total{mode='idle'}[5m])) * 100)"
+)
+```
+
+### Loki Log Analysis
+
+```python
+# Search for error patterns
+await loki_logging(
+    operation="search_errors",
+    query='{job="web-api"} |= "ERROR" or "Exception"'
+)
+```
+
+### Cross-System Incident Analysis
+
+```python
+# Correlate incident data
+await cross_system_correlation(
+    operation="correlate_incident",
+    incident_description="API response times spiked"
+)
+```
+
+### Health Monitoring
+
+```python
+# Check overall system health
+await monitoring_status(operation="system_health")
+```
+
+## 🚀 Installation
+
+### Prerequisites
+- [uv](https://docs.astral.sh/uv/) installed (RECOMMENDED)
+- Python 3.12+
+
+### 📦 Quick Start
+Run immediately via `uvx`:
+```bash
+uvx monitoring-mcp
+```
+
+### 🎯 Claude Desktop Integration
+Add to your `claude_desktop_config.json`:
+```json
+"mcpServers": {
+  "monitoring-mcp": {
+    "command": "uv",
+    "args": ["--directory", "D:/Dev/repos/monitoring-mcp", "run", "monitoring-mcp"]
+  }
+}
+```
+### Prerequisites
+- Python 3.10+
+- Access to Grafana, Prometheus, and Loki instances
+- FastMCP 2.14.3+ (installed automatically)
+
+### From PyPI (Recommended)
+
+```bash
+pip install monitoring-mcp
+```
+
+### From Source
+
+```bash
+git clone https://github.com/sandraschi/monitoring-mcp.git
+cd monitoring-mcp
+uv pip install -e .[dev]
+```
+
+### Configuration
+
+Create a `.env` file or set environment variables:
+
+```bash
+# Monitoring endpoints
+MONITORING_MCP_GRAFANA_URL=http://localhost:3000
+MONITORING_MCP_PROMETHEUS_URL=http://localhost:9090
+MONITORING_MCP_LOKI_URL=http://localhost:3100
+
+# Authentication (optional)
+MONITORING_MCP_GRAFANA_API_KEY=your_grafana_api_key
+MONITORING_MCP_GRAFANA_USERNAME=your_username
+MONITORING_MCP_GRAFANA_PASSWORD=your_password
+
+# Performance settings
+MONITORING_MCP_REQUEST_TIMEOUT=30
+MONITORING_MCP_MAX_CONCURRENT_REQUESTS=10
+MONITORING_MCP_MAX_RESULTS_LIMIT=1000
+
+# Sampling configuration
+MONITORING_MCP_ENABLE_SAMPLING=true
+MONITORING_MCP_SAMPLING_THRESHOLD=10000
+MONITORING_MCP_SAMPLING_RATE=0.1
+```
+
+## 🔧 Configuration
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `MONITORING_MCP_GRAFANA_URL` | Grafana server URL | `http://localhost:3000` |
+| `MONITORING_MCP_PROMETHEUS_URL` | Prometheus server URL | `http://localhost:9090` |
+| `MONITORING_MCP_LOKI_URL` | Loki server URL | `http://localhost:3100` |
+| `MONITORING_MCP_REQUEST_TIMEOUT` | Request timeout (seconds) | `30` |
+| `MONITORING_MCP_MAX_RESULTS_LIMIT` | Maximum results per query | `1000` |
+| `MONITORING_MCP_ENABLE_SAMPLING` | Enable intelligent sampling | `true` |
+
+### Authentication
+
+#### Grafana Authentication
+- **API Key** (recommended): Set `MONITORING_MCP_GRAFANA_API_KEY`
+- **Username/Password**: Set both `MONITORING_MCP_GRAFANA_USERNAME` and `MONITORING_MCP_GRAFANA_PASSWORD`
+
+#### Prometheus & Loki
+- Currently use direct HTTP access (no authentication required for local setups)
+- For production deployments, configure reverse proxies with authentication
+
+## 🚀 Quick Start
+
+### 1. Start the Server
+
+```bash
+# Using the installed package
+monitoring-mcp
+
+# Or directly with Python
+python -m monitoring_mcp
+```
+
+### 2. Configure Claude Desktop
+
+Add to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "monitoring": {
+      "command": "python",
+      "args": ["-m", "monitoring_mcp"],
+      "env": {
+        "MONITORING_MCP_GRAFANA_URL": "http://your-grafana:3000",
+        "MONITORING_MCP_PROMETHEUS_URL": "http://your-prometheus:9090",
+        "MONITORING_MCP_LOKI_URL": "http://your-loki:3100"
+      }
+    }
+  }
+}
+```
+
+### 3. Test Connection
+
+```python
+# Check system health
+result = await monitoring_status(operation="system_health")
+print(f"System status: {result['health_status']['overall_status']}")
+
+# Query a simple metric
+result = await prometheus_monitoring(
+    operation="query_metrics",
+    query="up"
+)
+print(f"Found {result['result_count']} metric series")
+```
+
+## 📊 Monitoring Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                 Monitoring MCP Server                   │
+│  ┌─────────────────────────────────────────────────┐    │
+│  │             Portmanteau Tools                    │    │
+│  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │    │
+│  │  │  Grafana    │ │ Prometheus  │ │    Loki     │ │    │
+│  │  │Management   │ │ Monitoring  │ │   Logging   │ │    │
+│  │  └─────────────┘ └─────────────┘ └─────────────┘ │    │
+│  └─────────────────────────────────────────────────┘    │
+└─────────────────┼───────────────────────────────────────┘
+                  │
+        ┌─────────┼─────────┐
+        │         │         │
+┌───────▼─────┐ ┌─▼──────┐ ┌▼────────┐
+│   Grafana   │ │Promethe│ │  Loki   │
+│ Dashboards  │ │ us Met- │ │   Logs  │
+│   & Panels  │ │ rics &  │ │Analysis │
+│             │ │ Alerts  │ │         │
+└─────────────┘ └────────┘ └─────────┘
+                  ▲
+                  │
+     ┌────────────┼────────────┐
+     │   Cross-System          │
+     │   Correlation Engine    │
+     │                         │
+     │ • Incident Analysis     │
+     │ • Root Cause Detection  │
+     │ • Performance Insights  │
+     │ • Health Assessment     │
+     └─────────────────────────┘
+```
+
+## 🔍 Tool Reference
+
+### Grafana Management (`grafana_management`)
+
+| Operation | Description |
+|-----------|-------------|
+| `list_dashboards` | List all dashboards with metadata |
+| `get_dashboard` | Retrieve specific dashboard |
+| `create_dashboard` | Create new dashboard |
+| `update_dashboard` | Modify existing dashboard |
+| `delete_dashboard` | Remove dashboard |
+| `search_dashboards` | Search dashboards by criteria |
+| `list_datasources` | List configured data sources |
+| `query_datasource` | Execute queries against data sources |
+| `analyze_dashboard` | AI-powered dashboard analysis |
+
+### Prometheus Monitoring (`prometheus_monitoring`)
+
+| Operation | Description |
+|-----------|-------------|
+| `query_metrics` | Execute instant PromQL queries |
+| `query_range` | Execute range PromQL queries |
+| `list_targets` | List scrape targets and status |
+| `get_target_health` | Check specific target health |
+| `list_rules` | List alerting and recording rules |
+| `list_alerts` | List active alerts |
+| `analyze_metrics` | AI-powered metrics analysis |
+| `optimize_queries` | Query optimization suggestions |
+
+### Loki Logging (`loki_logging`)
+
+| Operation | Description |
+|-----------|-------------|
+| `query_logs` | Execute instant LogQL queries |
+| `query_range` | Execute range LogQL queries |
+| `tail_logs` | Stream live logs |
+| `analyze_logs` | AI-powered log pattern analysis |
+| `detect_anomalies` | Identify unusual log patterns |
+| `search_errors` | Find error messages and exceptions |
+| `trace_requests` | Follow request traces |
+| `get_labels` | List available log labels |
+
+### Cross-System Correlation (`cross_system_correlation`)
+
+| Operation | Description |
+|-----------|-------------|
+| `correlate_incident` | Analyze incident across systems |
+| `find_root_cause` | AI-powered root cause analysis |
+| `performance_correlation` | Link performance with events |
+| `error_correlation` | Connect error patterns |
+| `health_assessment` | Comprehensive system health |
+| `service_dependency_map` | Map service relationships |
+
+### Status Monitoring (`monitoring_status`)
+
+| Operation | Description |
+|-----------|-------------|
+| `system_health` | Overall system health check |
+| `connectivity_test` | Test system connectivity |
+| `configuration_validation` | Validate configurations |
+| `performance_metrics` | Monitor system performance |
+| `data_flow_status` | Check data flow health |
+| `alert_status` | Monitor alerting systems |
+
+## 🔧 Development
+
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
+[![Type checking: mypy](https://img.shields.io/badge/mypy-checked-blue.svg)](http://mypy-lang.org/)
+
+[![pytest](https://img.shields.io/badge/testing-pytest-green.svg)](https://github.com/pytest-dev/pytest)
+[![asyncio](https://img.shields.io/badge/asyncio-compatible-blue.svg)](https://docs.python.org/3/library/asyncio.html)
+[![FastAPI](https://img.shields.io/badge/framework-FastAPI-009688.svg)](https://fastapi.tiangolo.com/)
+
+### Setup Development Environment
+
+```bash
+# Install development dependencies
+uv pip install -e .[dev]
+
+# Run tests
+pytest
+
+# Run linting
+ruff check .
+
+# Format code
+ruff format .
+
+# Type checking
+mypy src/
+```
+
+### Testing
+
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=monitoring_mcp --cov-report=html
+
+# Run specific test category
+pytest tests/unit/ -v
+pytest tests/integration/ -v
+```
+
+### Docker Development
+
+```bash
+# Build development image
+docker build -t monitoring-mcp:dev -f Dockerfile.dev .
+
+# Run with hot reload
+docker run -p 8000:8000 -v $(pwd):/app monitoring-mcp:dev
+```
+
+## 📚 Documentation
+
+### Guides and Documentation
+- **[API Reference](docs/api/)** - Complete API documentation
+- **[Grafana Integration](docs/grafana/)** - Grafana-specific guides
+- **[Prometheus Queries](docs/prometheus/)** - PromQL best practices
+- **[Loki Queries](docs/loki/)** - LogQL patterns and examples
+- **[Correlation Analysis](docs/correlation/)** - Cross-system analysis techniques
+- **[Troubleshooting](docs/troubleshooting/)** - Common issues and solutions
+
+### Architecture Documentation
+- **[System Architecture](docs/architecture/)** - System design and components
+- **[Performance Guide](docs/performance/)** - Optimization and scaling
+- **[Security](docs/security/)** - Security considerations and best practices
+- **[Deployment](docs/deployment/)** - Production deployment guides
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+### Development Workflow
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes with comprehensive tests
+4. Run the full test suite: `make test-all`
+5. Update documentation as needed
+6. Submit a pull request
+
+### Code Standards
+- **FastMCP 2.14.3+**: Use latest features and patterns
+- **Type Hints**: Full type coverage required
+- **Async First**: All operations should be async where appropriate
+- **Conversational**: Tool responses should be AI-friendly
+- **Documentation**: Comprehensive docstrings and examples
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **FastMCP Team** - For the excellent MCP framework
+- **Grafana Labs** - For Grafana, Prometheus, and Loki
+- **OpenTelemetry Community** - For observability standards
+- **Pydantic Team** - For powerful data validation
+
+---
+
+**Built with ❤️ using FastMCP 2.14.3 for intelligent monitoring operations**
+```
+
+### Grafana Integration
+Source: docs\monitoring-tools\grafana-integration.md
+```
+# Grafana Integration Guide
+
+This guide covers the comprehensive Grafana integration capabilities of the Monitoring MCP server.
+
+## Overview
+
+The Monitoring MCP provides full Grafana API integration through the `grafana_management` portmanteau tool, enabling AI-powered dashboard management, panel operations, and data source interactions.
+
+## Authentication
+
+### API Key Authentication (Recommended)
+
+```bash
+# Set environment variable
+export MONITORING_MCP_GRAFANA_API_KEY="your_grafana_api_key_here"
+
+# Or in .env file
+MONITORING_MCP_GRAFANA_API_KEY=your_grafana_api_key_here
+```
+
+### Username/Password Authentication
+
+```bash
+# Set environment variables
+export MONITORING_MCP_GRAFANA_USERNAME="admin"
+export MONITORING_MCP_GRAFANA_PASSWORD="your_password_here"
+```
+
+## Dashboard Management
+
+### Listing Dashboards
+
+```python
+# List all dashboards
+result = await grafana_management(operation="list_dashboards")
+print(f"Found {result['count']} dashboards")
+
+# With conversational summary
+print(result["conversational_summary"])
+# Output: "I found 15 dashboards in your Grafana instance. You have quite a comprehensive monitoring setup!"
+```
+
+### Creating Dashboards
+
+```python
+# Create a new dashboard
+dashboard_data = {
+    "title": "API Performance Overview",
+    "tags": ["api", "performance", "monitoring"],
+    "timezone": "browser",
+    "panels": [
+        {
+            "title": "Request Rate",
+            "type": "graph",
+            "targets": [
+                {
+                    "expr": "rate(http_requests_total[5m])",
+                    "legendFormat": "{{method}} {{status}}"
+                }
+            ]
+        }
+    ],
+    "time": {
+        "from": "now-1h",
+        "to": "now"
+    }
+}
+
+result = await grafana_management(
+    operation="create_dashboard",
+    dashboard_data=dashboard_data
+)
+
+print(f"Dashboard created with UID: {result['data']['uid']}")
+print(result["conversational_summary"])
+```
+
+### Dashboard Analysis
+
+```python
+# Analyze dashboard for optimization opportunities
+result = await grafana_management(
+    operation="analyze_dashboard",
+    dashboard_uid="your_dashboard_uid"
+)
+
+print(f"Dashboard score: {result['analysis']['overall_score']}/10")
+print(f"Recommendations: {len(result['ai_insights']['recommendations'])}")
+
+# AI insights
+for insight in result["ai_insights"]["recommendations"]:
+    print(f"• {insight}")
+```
+
+## Data Source Operations
+
+### Listing Data Sources
+
+```python
+# Get all configured data sources
+result = await grafana_management(operation="list_datasources")
+
+print(f"Found {result['count']} data sources:")
+for ds in result["data"]:
+    print(f"• {ds['name']} ({ds['type']}) - {'✓' if ds.get('isDefault') else ''}")
+```
+
+### Querying Data Sources
+
+```python
+# Query a data source directly
+result = await grafana_management(
+    operation="query_datasource",
+    datasource_id=1,  # Prometheus datasource ID
+    queries=[
+        {
+            "expr": "up",
+            "format": "time_series",
+            "intervalFactor": 1
+        }
+    ],
+    time_range={
+        "from": "now-1h",
+        "to": "now"
+    }
+)
+
+print(f"Query executed successfully: {result['success']}")
+print(f"Result count: {len(result['data']['results'])}")
+```
+
+## Panel Operations
+
+### Adding Panels to Dashboards
+
+```python
+# Add a new panel (placeholder for future implementation)
+result = await grafana_management(
+    operation="create_panel",
+    dashboard_uid="your_dashboard_uid",
+    panel_data={
+        "title": "Error Rate",
+        "type": "stat",
+        "targets": [
+            {
+                "expr": "rate(http_requests_total{status=~'5..'}[$__rate_interval])",
+                "refId": "A"
+            }
+        ]
+    }
+)
+
+# Note: Panel operations are planned for future versions
+print(result["conversational_summary"])
+```
+
+## Alert Management
+
+### Creating Alert Rules
+
+```python
+# Create alert rules (placeholder for future implementation)
+alert_rule = {
+    "name": "High Error Rate",
+    "condition": "C",
+    "noDataState": "NoValue",
+    "executionErrorState": "Alerting",
+    "for": "5m",
+    "frequency": "1m",
+    "handler": 1,
+    "rules": [
+        {
+            "expr": "rate(http_requests_total{status=~'5..'}[$__rate_interval]) > 0.1",
+            "labels": {"severity": "warning"},
+            "annotations": {
+                "summary": "High error rate detected",
+                "description": "Error rate is {{ $value }} which is above the threshold"
+            }
+        }
+    ]
+}
+
+result = await grafana_management(
+    operation="create_alert",
+    alert_rule=alert_rule
+)
+
+print(result["conversational_summary"])
+```
+
+## Advanced Features
+
+### Dashboard Search and Filtering
+
+```python
+# Search dashboards by title or tags
+result = await grafana_management(
+    operation="search_dashboards",
+    search_query="api performance"
+)
+
+print(f"Found {result['count']} dashboards matching 'api performance'")
+```
+
+### Export and Import
+
+```python
+# Export dashboard as JSON
+result = await grafana_management(
+    operation="export_dashboard",
+    dashboard_uid="your_dashboard_uid"
+)
+
+# Save to file
+import json
+with open("dashboard_backup.json", "w") as f:
+    json.dump(result["data"], f, indent=2)
+
+print("Dashboard exported successfully")
+```
+
+## Best Practices
+
+### Dashboard Organization
+
+1. **Use Consistent Naming**: Follow a naming convention like `[System]-[Component]-[Purpose]`
+2. **Tag Strategically**: Use tags for environment, team, and component identification
+3. **Folder Structure**: Organize dashboards into folders by team or system
+4. **Template Variables**: Use variables for dynamic filtering and reusability
+
+### Performance Optimization
+
+1. **Query Efficiency**: Use appropriate time ranges and intervals
+2. **Panel Limits**: Don't overload dashboards with too many panels
+3. **Data Source Selection**: Choose the right data source for each query type
+4. **Caching**: Leverage Grafana's query caching where appropriate
+
+### Security Considerations
+
+1. **API Key Management**: Rotate API keys regularly
+2. **Permission Levels**: Use appropriate permission levels for different users
+3. **Dashboard Permissions**: Set appropriate viewing and editing permissions
+4. **Audit Logging**: Monitor dashboard access and changes
+
+## Troubleshooting
+
+### Common Issues
+
+#### Authentication Errors
+```python
+# Check authentication setup
+result = await grafana_management(operation="list_dashboards")
+if not result["success"]:
+    print(f"Authentication issue: {result['error']}")
+    print("Check your GRAFANA_API_KEY or username/password settings")
+```
+
+#### Connection Issues
+```python
+# Test connectivity
+result = await monitoring_status(operation="connectivity_test")
+grafana_status = result["connectivity"]["grafana"]
+if grafana_status["status"] != "connected":
+    print(f"Grafana connection failed: {grafana_status['error']}")
+    print("Verify Grafana URL and network connectivity")
+```
+
+#### Permission Issues
+```python
+# Check permissions on specific dashboard
+result = await grafana_management(
+    operation="get_dashboard_permissions",
+    dashboard_uid="your_dashboard_uid"
+)
+print(f"Permissions: {result['data']}")
+```
+
+### Error Recovery
+
+1. **Retry Logic**: The MCP automatically retries failed requests
+2. **Graceful Degradation**: Operations continue even if some components fail
+3. **Detailed Logging**: Check logs for detailed error information
+4. **Health Checks**: Use status monitoring to identify issues proactively
+
+## Integration Examples
+
+### CI/CD Pipeline Integration
+
+```python
+# Create deployment dashboard after successful deployment
+async def create_deployment_dashboard(version, environment):
+    dashboard_data = {
+        "title": f"Deployment {version} - {environment}",
+        "tags": ["deployment", environment, version],
+        "panels": [
+            # Add relevant panels for deployment monitoring
+        ]
+    }
+
+    result = await grafana_management(
+        operation="create_dashboard",
+        dashboard_data=dashboard_data,
+        folder_name=f"Deployments/{environment}"
+    )
+
+    return result["data"]["url"]
+```
+
+### Automated Alert Setup
+
+```python
+# Set up alerts for new services
+async def setup_service_alerts(service_name):
+    alerts = [
+        {
+            "name": f"{service_name} - High Error Rate",
+            "query": f'rate(http_requests_total{{service="{service_name}", status=~"5.."}}[5m]) > 0.05'
+        },
+        {
+            "name": f"{service_name} - High Latency",
+            "query": f'histogram_quantile(0.95, rate(http_request_duration_seconds{{service="{service_name}"}}[5m])) > 2'
+        }
+    ]
+
+    for alert in alerts:
+        await grafana_management(
+            operation="create_alert",
+            alert_rule=alert
+        )
+```
+
+## API Reference
+
+### Tool Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `operation` | string | Yes | Grafana operation to perform |
+| `dashboard_uid` | string | Sometimes | Dashboard unique identifier |
+| `dashboard_title` | string | Sometimes | Dashboard title |
+| `dashboard_data` | dict | Sometimes | Dashboard JSON configuration |
+| `folder_id` | int | No | Folder ID for organization |
+| `search_query` | string | No | Search query for filtering |
+| `datasource_id` | int | Sometimes | Data source identifier |
+| `queries` | list | Sometimes | Query objects for execution |
+| `time_range` | dict | Sometimes | Time range specification |
+| `panel_data` | dict | Sometimes | Panel configuration |
+| `alert_rule` | dict | Sometimes | Alert rule configuration |
+
+### Response Structure
+
+```python
+{
+    "success": bool,           # Operation success status
+    "operation": string,       # Operation performed
+    "data": dict,             # Operation-specific data
+    "conversational_summary": string,  # Natural language summary
+    "ai_insights": {          # AI-powered recommendations
+        "recommendations": list,
+        "alerting_opportunities": list,
+        "optimization_suggestions": list
+    }
+}
+```
+
+## Related Documentation
+
+- [Prometheus Integration Guide](prometheus-integration.md)
+- [Loki Integration Guide](loki-integration.md)
+- [Cross-System Correlation](correlation-analysis.md)
+- [API Reference](../api/index.md)
+- [Troubleshooting Guide](../troubleshooting.md)
+```
+
+### Contributing
+Source: CONTRIBUTING.md
+```
+# Contributing to Monitoring MCP
+
+Thank you for your interest in contributing to the Monitoring MCP Server! This document provides guidelines and information for contributors.
+
+## Development Setup
+
+### Prerequisites
+- Python 3.10+
+- Git
+
+### Installation
+```bash
+git clone https://github.com/sandraschi/monitoring-mcp.git
+cd monitoring-mcp
+pip install -e .[dev]
+```
+
+### Development Workflow
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/your-feature-name`
+3. Make your changes with comprehensive tests
+4. Run the quality checks: `make check` or `ruff check . && ruff format . && mypy src/ && pytest`
+5. Commit your changes: `git commit -m "Add your feature"`
+6. Push to your fork: `git push origin feature/your-feature-name`
+7. Create a Pull Request
+
+## Code Quality Standards
+
+### Linting and Formatting
+- Code must pass `ruff check .` and `ruff format --check .`
+- Type hints are required for all new code
+- Follow PEP 8 style guidelines
+
+### Testing
+- All new features must include comprehensive tests
+- Tests should achieve at least 80% code coverage
+- Run tests with `pytest`
+
+### Documentation
+- Update README.md for any user-facing changes
+- Add docstrings to all public functions and classes
+- Update type hints as needed
+
+## Pull Request Process
+
+1. **Title**: Use a clear, descriptive title
+2. **Description**: Explain what the PR does and why
+3. **Tests**: Ensure all tests pass
+4. **Documentation**: Update docs if needed
+5. **Review**: Request review from maintainers
+
+## Commit Message Guidelines
+
+Use conventional commit format:
+- `feat:` for new features
+- `fix:` for bug fixes
+- `docs:` for documentation
+- `style:` for formatting
+- `refactor:` for code refactoring
+- `test:` for testing
+- `chore:` for maintenance
+
+Example: `feat: add prometheus alerting support`
+
+## Architecture Guidelines
+
+### Portmanteau Pattern
+This project uses the "portmanteau tool" pattern to avoid tool explosion:
+- Consolidate related operations into single tools
+- Use operation parameters to route to specific functionality
+- Maintain clean separation of concerns
+
+### Async First
+- All I/O operations should be async
+- Use FastMCP's async capabilities
+- Avoid blocking operations in tool implementations
+
+### Error Handling
+- Provide conversational error messages
+- Include troubleshooting tips when possible
+- Gracefully degrade when services are unavailable
+
+## Issue Reporting
+
+When reporting bugs or requesting features:
+- Use the GitHub issue templates
+- Provide clear reproduction steps
+- Include relevant logs and configuration
+- Specify your environment (Python version, OS, etc.)
+
+## License
+
+By contributing to this project, you agree that your contributions will be licensed under the MIT License.
+```
+
+### Changelog
+Source: CHANGELOG.md
+```
+# Changelog
+
+All notable changes to the Monitoring MCP will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.1.0] - 2026-01-16
+
+### Added
+- **Initial Release**: Complete FastMCP 2.14.3-powered monitoring server
+- **Grafana Management Tool**: Comprehensive dashboard and panel operations
+  - List, create, update, delete dashboards
+  - Data source queries and management
+  - Dashboard analysis and optimization
+- **Prometheus Monitoring Tool**: Full PromQL query capabilities
+  - Instant and range queries
+  - Target health monitoring
+  - Alert rule management
+  - Query optimization suggestions
+- **Loki Logging Tool**: Complete LogQL operations
+  - Log queries with intelligent sampling
+  - Pattern recognition and anomaly detection
+  - Error correlation analysis
+  - Request tracing capabilities
+- **Cross-System Correlation Tool**: Intelligent incident analysis
+  - Root cause analysis with AI assistance
+  - Performance correlation across systems
+  - Error pattern correlation
+  - Comprehensive health assessment
+- **Status Monitoring Tool**: System health and diagnostics
+  - Connectivity testing
+  - Configuration validation
+  - Data flow monitoring
+  - Alert system status checks
+- **Conversational AI Responses**: Natural language summaries and insights
+- **Intelligent Sampling**: Automatic data reduction for large datasets
+- **Persistent Storage**: DiskStore backend with encryption
+- **Comprehensive Configuration**: Environment-based settings with Pydantic validation
+- **Structured Logging**: JSON-formatted logs with rich context
+- **Error Recovery**: Graceful degradation and automatic retry logic
+
+### Technical Features
+- **FastMCP 2.14.3 Integration**: Latest MCP framework features
+- **Portmanteau Tool Design**: Consolidated operations to avoid tool explosion
+- **Async/Await Pattern**: Full asynchronous operations throughout
+- **Type Safety**: Complete type hints with mypy compliance
+- **Modern Python**: Python 3.10+ with full modern syntax support
+- **Security**: Encrypted storage and authentication support
+- **Performance**: Intelligent caching and rate limiting
+- **Observability**: Self-monitoring capabilities
+
+### Documentation
+- **Comprehensive README**: Installation, usage examples, and API reference
+- **PRD**: Complete product requirements and architecture documentation
+- **Architecture Documentation**: System design and component details
+- **API Documentation**: Complete tool reference and examples
+- **Development Guide**: Setup, testing, and contribution guidelines
+
+### Development
+- **Testing Framework**: Comprehensive pytest suite with coverage
+- **Code Quality**: Ruff linting and formatting
+- **Type Checking**: MyPy static analysis
+- **CI/CD Ready**: GitHub Actions workflow templates
+- **Docker Support**: Containerized deployment ready
+- **IDE Integration**: Zed extension configuration
+
+### Dependencies
+- **Core**: FastMCP 2.14.3+, httpx, pydantic v2, py-key-value-aio
+- **Monitoring**: grafana-api, prometheus-api-client, loky
+- **Data Processing**: pandas, numpy, plotly
+- **Development**: pytest, ruff, mypy, pre-commit
+
+## [Unreleased]
+
+### Planned Features
+- **Alert Rule Management**: Full CRUD operations for alert rules
+- **Dashboard Templates**: Pre-built dashboard templates for common use cases
+- **Advanced Correlation**: Machine learning-based anomaly detection
+- **Performance Profiling**: Detailed performance analysis and recommendations
+- **Multi-Tenant Support**: Organization and user isolation
+- **Audit Logging**: Comprehensive operation audit trails
+- **Backup/Restore**: Configuration and data backup capabilities
+- **Web UI**: Optional web interface for direct interaction
+- **Plugin System**: Extensible architecture for custom tools
+- **Federated Queries**: Cross-cluster query capabilities
+
+### Improvements
+- **Query Optimization**: Advanced PromQL and LogQL optimization
+- **Caching**: Intelligent response caching with TTL
+- **Rate Limiting**: Advanced rate limiting with burst handling
+- **Error Recovery**: Enhanced error recovery with circuit breakers
+- **Metrics**: Detailed internal performance metrics
+- **Documentation**: Interactive API documentation
+- **Examples**: Comprehensive example library
+- **Tutorials**: Step-by-step usage tutorials
+
+### Technical Enhancements
+- **WebSocket Support**: Real-time streaming for live data
+- **GraphQL Integration**: Advanced query capabilities
+- **Machine Learning**: AI-powered insights and predictions
+- **Event Streaming**: Kafka/Redis integration for events
+- **Database Integration**: PostgreSQL/SQLite support
+- **Cloud Integration**: AWS CloudWatch, GCP Monitoring support
+- **Container Orchestration**: Kubernetes-native deployment
+- **Service Mesh**: Istio and Linkerd integration
+
+---
+
+## Version History
+
+### Development Versions
+- **0.1.0-dev**: Initial development release with core functionality
+- **0.0.1-alpha**: Pre-release alpha with basic tool implementations
+
+### Release Notes
+
+#### 0.1.0
+This is the first production-ready release of the Monitoring MCP server. It provides comprehensive monitoring capabilities across Grafana, Prometheus, and Loki with intelligent AI assistance.
+
+**Breaking Changes:**
+- None (initial release)
+
+**Migration Guide:**
+- No migration needed for initial release
+
+**Known Issues:**
+- Alert rule management operations are placeholders for future implementation
+- Some advanced correlation features are in early development
+- Docker deployment requires manual configuration
+
+**Security Notes:**
+- API keys are stored encrypted using Fernet encryption
+- No sensitive data is logged by default
+- Authentication is handled securely with proper error masking
+
+---
+
+## Contributing to Changelog
+
+When contributing to this project, please:
+1. Update the `Unreleased` section with your changes
+2. Move items to appropriate version sections when releasing
+3. Follow the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format
+4. Use present tense for changes (e.g., "Add feature" not "Added feature")
+5. Group changes under appropriate headings (Added, Changed, Deprecated, Removed, Fixed, Security)
+
+### Change Categories
+- **Added**: New features
+- **Changed**: Changes in existing functionality
+- **Deprecated**: Soon-to-be removed features
+- **Removed**: Removed features
+- **Fixed**: Bug fixes
+- **Security**: Security-related changes
+
+---
+
+## Release Process
+
+1. Update version in `pyproject.toml`
+2. Update `CHANGELOG.md` with release notes
+3. Create git tag
+4. Build and publish to PyPI
+5. Update documentation
+6. Announce release
+
+For more information, see [CONTRIBUTING.md](CONTRIBUTING.md).
+```
+
+### Code Of Conduct
+Source: CODE_OF_CONDUCT.md
+```
+# Code of Conduct
+
+## Our Pledge
+
+We as members, contributors, and leaders pledge to make participation in our community a harassment-free experience for everyone, regardless of age, body size, visible or invisible disability, ethnicity, sex characteristics, gender identity and expression, level of experience, education, socio-economic status, nationality, personal appearance, race, religion, or sexual identity and orientation.
+
+We pledge to act and interact in ways that contribute to an open, welcoming, diverse, inclusive, and healthy community.
+
+## Our Standards
+
+Examples of behavior that contributes to a positive environment for our community include:
+
+- Demonstrating empathy and kindness toward other people
+- Being respectful of differing opinions, viewpoints, and experiences
+- Giving and gracefully accepting constructive feedback
+- Accepting responsibility and apologizing to those affected by our mistakes
+- Focusing on what is best not just for us as individuals, but for the overall community
+
+Examples of unacceptable behavior include:
+
+- The use of sexualized language or imagery, and sexual attention or advances of any kind
+- Trolling, insulting or derogatory comments, and personal or political attacks
+- Public or private harassment
+- Publishing others' private information, such as a physical or email address, without their explicit permission
+- Other conduct which could reasonably be considered inappropriate in a professional setting
+
+## Enforcement Responsibilities
+
+Community leaders are responsible for clarifying and enforcing our standards of acceptable behavior and will take appropriate and fair corrective action in response to any behavior that they deem inappropriate, threatening, offensive, or harmful.
+
+Community leaders have the right and responsibility to remove, edit, or reject comments, commits, code, wiki edits, issues, and other contributions that are not aligned to this Code of Conduct, and will communicate reasons for moderation decisions when appropriate.
+
+## Scope
+
+This Code of Conduct applies within all community spaces, and also applies when an individual is officially representing the community in public spaces. Examples of representing our community include using an official e-mail address, posting via an official social media account, or acting as an appointed representative at an online or offline event.
+
+## Enforcement
+
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the community leaders responsible for enforcement at sandra.schi@example.com. All complaints will be reviewed and investigated promptly and fairly.
+
+All community leaders are obligated to respect the privacy and security of the reporter of any incident.
+
+## Enforcement Guidelines
+
+Community leaders will follow these Community Impact Guidelines in determining the consequences for any action they deem in violation of this Code of Conduct:
+
+### 1. Correction
+
+**Community Impact**: Use of inappropriate language or other behavior deemed unprofessional or unwelcome in the community.
+
+**Consequence**: A private, written warning from community leaders, providing clarity around the nature of the violation and an explanation of why the behavior was inappropriate. A public apology may be requested.
+
+### 2. Warning
+
+**Community Impact**: A violation through a single incident or series of actions.
+
+**Consequence**: A warning with consequences for continued behavior. No interaction with the people involved, including unsolicited interaction with those enforcing the Code of Conduct, for a specified period of time. This includes avoiding interactions in community spaces as well as external channels like social media. Violating these terms may lead to a temporary or permanent ban.
+
+### 3. Temporary Ban
+
+**Community Impact**: A serious violation of community standards, including sustained inappropriate behavior.
+
+**Consequence**: A temporary ban from any sort of interaction or public communication with the community for a specified period of time. No public or private interaction with the people involved, including unsolicited interaction with those enforcing the Code of Conduct, is allowed during this period. Violating these terms may lead to a permanent ban.
+
+### 4. Permanent Ban
+
+**Community Impact**: Demonstrating a pattern of violation of community standards, including sustained inappropriate behavior, harassment of an individual, or aggression toward or disparagement of classes of individuals.
+
+**Consequence**: A permanent ban from any sort of public interaction within the community.
+
+## Attribution
+
+This Code of Conduct is adapted from the [Contributor Covenant][homepage], version 2.0, available at https://www.contributor-covenant.org/version/2/0/code_of_conduct.html.
+
+Community Impact Guidelines were inspired by [Mozilla's code of conduct enforcement ladder](https://github.com/mozilla/diversity).
+
+[homepage]: https://www.contributor-covenant.org
+
+For answers to common questions about this code of conduct, see the FAQ at https://www.contributor-covenant.org/faq. Translations are available at https://www.contributor-covenant.org/translations.
+```
+
+### Prd
+Source: PRD.md
+```
+# Monitoring MCP Product Requirements Document
+
+## Executive Summary
+
+The Monitoring MCP is a comprehensive FastMCP 2.14.3-powered server that provides intelligent operations across Grafana, Prometheus, and Loki ecosystems. It enables AI assistants to perform sophisticated monitoring tasks with conversational responses, intelligent sampling, and cross-system correlation analysis.
+
+## Product Vision
+
+**Enable AI-powered DevOps workflows by providing comprehensive monitoring intelligence through natural language interactions with Grafana, Prometheus, and Loki.**
+
+## Target Users
+
+- **DevOps Engineers**: Need to quickly diagnose issues across monitoring systems
+- **SRE Teams**: Require automated incident response and root cause analysis
+- **Platform Engineers**: Manage monitoring infrastructure and dashboards
+- **AI Assistants**: Leverage monitoring data for intelligent decision making
+- **Developers**: Debug applications using correlated metrics and logs
+
+## Core Requirements
+
+### Functional Requirements
+
+#### FR-001: Grafana Management
+**Priority**: High
+**Description**: Provide comprehensive Grafana dashboard and panel management
+**Requirements**:
+- List, create, update, delete dashboards
+- Panel management and configuration
+- Data source queries and management
+- Alert rule configuration
+- Dashboard analysis and optimization suggestions
+
+#### FR-002: Prometheus Monitoring
+**Priority**: High
+**Description**: Enable PromQL queries and metrics analysis
+**Requirements**:
+- Instant and range queries
+- Target health monitoring
+- Alert rule management
+- Query optimization and performance analysis
+- Intelligent sampling for large datasets
+
+#### FR-003: Loki Logging
+**Priority**: High
+**Description**: Provide LogQL queries and log analysis
+**Requirements**:
+- Instant and range log queries
+- Real-time log tailing
+- Pattern recognition and anomaly detection
+- Error correlation and analysis
+- Request tracing capabilities
+
+#### FR-004: Cross-System Correlation
+**Priority**: High
+**Description**: Correlate data across monitoring systems
+**Requirements**:
+- Incident analysis across metrics, logs, and traces
+- Root cause analysis with AI assistance
+- Performance correlation analysis
+- Error pattern correlation
+- Health assessment and scoring
+
+#### FR-005: Status Monitoring
+**Priority**: Medium
+**Description**: Monitor health of monitoring systems themselves
+**Requirements**:
+- System health checks
+- Connectivity testing
+- Configuration validation
+- Data flow monitoring
+- Alert system status
+
+### Non-Functional Requirements
+
+#### NFR-001: Performance
+**Requirements**:
+- Query response time: < 5 seconds for typical queries
+- Concurrent users: Support 10+ simultaneous operations
+- Data sampling: Automatic for result sets > 10,000 items
+- Memory usage: < 100MB baseline + 50MB per active operation
+
+#### NFR-002: Reliability
+**Requirements**:
+- Error recovery: Graceful degradation on system failures
+- Retry logic: Automatic retries for transient failures
+- Data consistency: Maintain state across restarts
+- Monitoring: Self-monitoring capabilities
+
+#### NFR-003: Usability
+**Requirements**:
+- Conversational responses: Natural language summaries
+- Progressive disclosure: Basic results first, details on demand
+- Error messages: Clear, actionable error descriptions
+- Help system: Built-in operation guidance
+
+#### NFR-004: Security
+**Requirements**:
+- Authentication: Support for API keys and credentials
+- Encryption: Secure storage of sensitive data
+- Access control: Respect system permissions
+- Audit logging: Track all operations
+
+#### NFR-005: Compatibility
+**Requirements**:
+- Grafana: API v9.0+
+- Prometheus: API v1
+- Loki: API v1
+- Python: 3.10+
+- FastMCP: 2.14.3+
+
+## Technical Architecture
+
+### System Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                 Monitoring MCP Server                   │
+│  ┌─────────────────────────────────────────────────┐    │
+│  │             Portmanteau Tools                    │    │
+│  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │    │
+│  │  │  Grafana    │ │ Prometheus  │ │    Loki     │ │    │
+│  │  │Management   │ │ Monitoring  │ │   Logging   │ │    │
+│  │  └─────────────┘ └─────────────┘ └─────────────┘ │    │
+│  └─────────────────────────────────────────────────┘    │
+└─────────────────┼───────────────────────────────────────┘
+                  │
+        ┌─────────┼─────────┐
+        │         │         │
+┌───────▼─────┐ ┌─▼──────┐ ┌▼────────┐
+│   Grafana   │ │Promethe│ │  Loki   │
+│ Dashboards  │ │ us Met- │ │   Logs  │
+│   & Panels  │ │ rics &  │ │Analysis │
+│             │ │ Alerts  │ │         │
+└─────────────┘ └────────┘ └─────────┘
+                  ▲
+                  │
+     ┌────────────┼────────────┐
+     │   Cross-System          │
+     │   Correlation Engine    │
+     │                         │
+     │ • Incident Analysis     │
+     │ • Root Cause Detection  │
+     │ • Performance Insights  │
+     │ • Health Assessment     │
+     └─────────────────────────┘
+```
+
+### Component Architecture
+
+#### Core Components
+
+1. **MCP Server** (`MonitoringMCPServer`)
+   - FastMCP 2.14.3 integration
+   - Portmanteau tool registration
+   - Configuration management
+   - Error handling and logging
+
+2. **Tool Layer** (`tools/`)
+   - Portmanteau tools for each system
+   - Conversational response generation
+   - Intelligent sampling logic
+   - Cross-system correlation
+
+3. **Client Layer** (`clients/`)
+   - HTTP clients for each monitoring system
+   - Authentication handling
+   - Rate limiting and retry logic
+   - Error recovery
+
+4. **Model Layer** (`models/`)
+   - Pydantic v2 data models
+   - Type validation and serialization
+   - API response structures
+
+5. **Storage Layer** (`storage/`)
+   - Persistent configuration storage
+   - Cache management
+   - Session state management
+
+### Data Flow
+
+1. **Request Processing**:
+   - MCP server receives tool call
+   - Configuration validation
+   - Authentication setup
+   - Request routing to appropriate client
+
+2. **Data Retrieval**:
+   - API calls to monitoring systems
+   - Error handling and retries
+   - Data validation and transformation
+   - Sampling for large datasets
+
+3. **Analysis & Correlation**:
+   - Cross-system data correlation
+   - AI-powered insights generation
+   - Pattern recognition and anomaly detection
+   - Root cause analysis
+
+4. **Response Generation**:
+   - Conversational summary creation
+   - Actionable insights and recommendations
+   - Structured data formatting
+   - Error handling and recovery suggestions
+
+## Implementation Plan
+
+### Phase 1: Core Infrastructure (Week 1-2)
+- [x] Project scaffolding with FastMCP 2.14.3
+- [x] Basic MCP server implementation
+- [x] Configuration management with Pydantic
+- [x] Persistent storage setup
+- [x] Testing framework setup
+
+### Phase 2: Grafana Integration (Week 3-4)
+- [x] Grafana API client implementation
+- [x] Dashboard management tools
+- [x] Data source query capabilities
+- [x] Basic panel operations
+- [ ] Alert rule management
+
+### Phase 3: Prometheus Integration (Week 5-6)
+- [x] Prometheus API client implementation
+- [x] PromQL query execution
+- [x] Target health monitoring
+- [x] Alert management
+- [ ] Rule configuration
+
+### Phase 4: Loki Integration (Week 7-8)
+- [x] Loki API client implementation
+- [x] LogQL query execution
+- [x] Pattern analysis
+- [x] Anomaly detection
+
+### Phase 5: Cross-System Correlation (Week 9-10)
+- [x] Correlation engine implementation
+- [x] Incident analysis capabilities
+- [x] Root cause analysis
+- [x] Health assessment
+
+### Phase 6: Intelligence & Optimization (Week 11-12)
+- [x] Conversational response generation
+- [x] AI-powered insights
+- [x] Query optimization
+- [x] Performance monitoring
+
+### Phase 7: Production Readiness (Week 13-14)
+- [ ] Comprehensive testing
+- [ ] Documentation completion
+- [ ] Docker containerization
+- [ ] Zed extension support
+- [ ] Production deployment guides
+
+## Success Metrics
+
+### Quantitative Metrics
+- **Query Performance**: < 5 second average response time
+- **Accuracy**: > 95% correct API interactions
+- **Reliability**: > 99% uptime
+- **User Satisfaction**: > 4.5/5 user rating
+
+### Qualitative Metrics
+- **Ease of Use**: Natural language interactions
+- **Insight Quality**: Actionable recommendations
+- **Integration**: Seamless workflow integration
+- **Maintainability**: Clean, documented codebase
+
+## Risk Assessment
+
+### Technical Risks
+- **API Compatibility**: Monitoring systems may change APIs
+  - *Mitigation*: Version pinning and compatibility testing
+- **Performance**: Large datasets may cause timeouts
+  - *Mitigation*: Intelligent sampling and pagination
+- **Authentication**: Complex auth requirements
+  - *Mitigation*: Flexible auth system with multiple methods
+
+### Operational Risks
+- **Dependencies**: Reliance on external monitoring systems
+  - *Mitigation*: Graceful degradation and error handling
+- **Scalability**: High concurrent usage
+  - *Mitigation*: Rate limiting and resource management
+- **Security**: Sensitive monitoring data handling
+  - *Mitigation*: Encryption and access controls
+
+## Dependencies
+
+### External Dependencies
+- **FastMCP 2.14.3+**: Core MCP framework
+- **Grafana API**: Dashboard and query operations
+- **Prometheus API**: Metrics and alerting
+- **Loki API**: Log querying and analysis
+- **httpx**: Async HTTP client
+- **pydantic**: Data validation
+- **py-key-value-aio**: Persistent storage
+
+### Development Dependencies
+- **pytest**: Testing framework
+- **ruff**: Code linting and formatting
+- **mypy**: Type checking
+- **faker**: Test data generation
+
+## Testing Strategy
+
+### Unit Testing
+- Individual tool functions
+- API client operations
+- Data transformation logic
+- Error handling scenarios
+
+### Integration Testing
+- End-to-end tool operations
+- Cross-system correlation
+- Authentication flows
+- Error recovery scenarios
+
+### Performance Testing
+- Query performance benchmarks
+- Concurrent operation handling
+- Memory usage monitoring
+- Large dataset handling
+
+### Compatibility Testing
+- Multiple Grafana versions
+- Different Prometheus configurations
+- Various Loki deployments
+- Cross-platform testing
+
+## Documentation Requirements
+
+### User Documentation
+- **README**: Installation and quick start guide
+- **API Reference**: Complete tool documentation
+- **Examples**: Practical usage examples
+- **Troubleshooting**: Common issues and solutions
+
+### Developer Documentation
+- **Architecture Guide**: System design and components
+- **Contributing Guide**: Development workflow
+- **API Documentation**: Internal API references
+- **Testing Guide**: Testing procedures and guidelines
+
+## Deployment Strategy
+
+### Development Environment
+- Local Docker Compose setup
+- Hot reload development server
+- Integrated testing environment
+
+### Production Deployment
+- Docker container images
+- Kubernetes manifests
+- Configuration management
+- Monitoring and alerting
+
+### Distribution Channels
+- PyPI package distribution
+- Docker Hub images
+- GitHub releases
+- Documentation hosting
+
+## Maintenance Plan
+
+### Ongoing Maintenance
+- **Security Updates**: Regular dependency updates
+- **Compatibility Testing**: Monitor upstream API changes
+- **Performance Monitoring**: Track and optimize performance
+- **User Support**: Issue tracking and resolution
+
+### Version Management
+- **Semantic Versioning**: Major.minor.patch versioning
+- **Release Cycle**: Monthly feature releases, as-needed patches
+- **Deprecation Policy**: 2-version deprecation notice
+- **Support Timeline**: 1 year support for major versions
+
+## Conclusion
+
+The Monitoring MCP represents a significant advancement in AI-powered DevOps workflows by providing intelligent, conversational access to comprehensive monitoring data. By leveraging FastMCP 2.14.3's advanced capabilities and implementing a portmanteau tool design, the system offers unparalleled insights into system health and performance.
+
+The modular architecture ensures maintainability while the focus on conversational AI responses makes complex monitoring tasks accessible to both technical and non-technical users. The cross-system correlation capabilities provide unique value by enabling automated root cause analysis and intelligent incident response.
+
+This product will serve as a cornerstone for AI-assisted DevOps operations, enabling faster problem resolution, better system understanding, and more proactive monitoring strategies.
+```
+
+## Api - Full Content
+
+###   Init  
+Source: src\monitoring_mcp\models\__init__.py
+```
+"""
+Monitoring MCP Models Package
+
+Pydantic v2 models for monitoring data structures, API responses,
+and configuration validation.
+"""
+
+from .common import (
+    AlertInfo,
+    DashboardInfo,
+    HealthStatus,
+    LogEntry,
+    MetricData,
+    TimeRange,
+)
+from .grafana import (
+    GrafanaAlert,
+    GrafanaDashboard,
+    GrafanaDatasource,
+    GrafanaPanel,
+)
+from .loki import (
+    LokiLabel,
+    LokiQuery,
+    LokiStream,
+)
+from .prometheus import (
+    PrometheusAlert,
+    PrometheusMetric,
+    PrometheusQuery,
+    PrometheusTarget,
+)
+
+__all__ = [
+    "AlertInfo",
+    "DashboardInfo",
+    "GrafanaAlert",
+    "GrafanaDashboard",
+    "GrafanaDatasource",
+    "GrafanaPanel",
+    "HealthStatus",
+    "LogEntry",
+    "LokiLabel",
+    "LokiQuery",
+    "LokiStream",
+    "MetricData",
+    "PrometheusAlert",
+    "PrometheusMetric",
+    "PrometheusQuery",
+    "PrometheusTarget",
+    "TimeRange",
+]
+
+```
+
+### Common
+Source: src\monitoring_mcp\models\common.py
+```
+"""
+Common Models for Monitoring MCP
+
+Shared Pydantic v2 models used across all monitoring tools.
+"""
+
+from typing import Any
+
+from pydantic import BaseModel, Field
+
+
+class TimeRange(BaseModel):
+    """
+    Time range specification for queries.
+
+    Used to define temporal boundaries for metric and log queries across
+    Grafana, Prometheus, and Loki.
+    """
+
+    start: str = Field(..., description="Start time (RFC3339 or unix timestamp)")
+    end: str = Field(..., description="End time (RFC3339 or unix timestamp)")
+    step: str | None = Field(None, description="Query resolution step (Prometheus format)")
+
+
+class MetricData(BaseModel):
+    """
+    Generic metric data structure.
+
+    Represents a single metric measurement with its value, timestamp,
+    and associated metadata/labels.
+    """
+
+    name: str = Field(..., description="Metric name")
+    value: float = Field(..., description="Metric value")
+    timestamp: str | None = Field(None, description="Timestamp (RFC3339 format)")
+    labels: dict[str, str] = Field(default_factory=dict, description="Metric labels/dimensions")
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+
+
+class LogEntry(BaseModel):
+    """Generic log entry structure."""
+
+    timestamp: str = Field(..., description="Log timestamp")
+    message: str = Field(..., description="Log message")
+    level: str | None = Field(None, description="Log level")
+    labels: dict[str, str] = Field(default_factory=dict, description="Log labels")
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+
+
+class DashboardInfo(BaseModel):
+    """Dashboard information structure."""
+
+    uid: str = Field(..., description="Dashboard UID")
+    title: str = Field(..., description="Dashboard title")
+    tags: list[str] = Field(default_factory=list, description="Dashboard tags")
+    folder: str | None = Field(None, description="Dashboard folder")
+    panels: int = Field(..., description="Number of panels")
+    last_modified: str | None = Field(None, description="Last modified timestamp")
+
+
+class AlertInfo(BaseModel):
+    """Alert information structure."""
+
+    name: str = Field(..., description="Alert name")
+    state: str = Field(..., description="Alert state (firing, pending, inactive)")
+    severity: str | None = Field(None, description="Alert severity")
+    description: str | None = Field(None, description="Alert description")
+    labels: dict[str, str] = Field(default_factory=dict, description="Alert labels")
+    annotations: dict[str, str] = Field(default_factory=dict, description="Alert annotations")
+    active_since: str | None = Field(None, description="When alert became active")
+
+
+class HealthStatus(BaseModel):
+    """Health status structure."""
+
+    component: str = Field(..., description="Component name")
+    status: str = Field(..., description="Health status (healthy, degraded, unhealthy)")
+    score: int | None = Field(None, description="Health score (0-100)")
+    details: str | None = Field(None, description="Health details")
+    last_check: str | None = Field(None, description="Last health check timestamp")
+    issues: list[str] = Field(default_factory=list, description="Identified issues")
+
+```
+
+## Examples - Full Content
+
+## Configuration - Full Content
+
+### Pyproject
+Source: pyproject.toml
+```
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "monitoring-mcp"
+version = "0.1.0"
+description = "FastMCP 2.14.3-powered monitoring server for Grafana, Prometheus, and Loki"
+readme = "README.md"
+authors = [
+    { name = "Sandra Schi", email = "sandra.schi@example.com" },
+]
+requires-python = ">=3.12"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: System :: Monitoring",
+    "Topic :: System :: Systems Administration",
+]
+dependencies = [
+    "fastmcp>=2.14.5",
+    "py-key-value-aio[disk]>=0.2.8,<0.4.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "httpx>=0.27.0",
+    "python-dotenv>=1.0.0",
+    "structlog>=23.0.0",
+    "prometheus-client>=0.21.0",
+    "grafana-api>=1.0.3",
+    "prometheus-api-client>=0.5.0",
+    "loky>=3.4.0",
+    "plotly>=5.17.0",
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    "aiohttp>=3.9.0",
+    "requests>=2.31.0",
+    "urllib3>=2.0.0",
+    "psutil>=5.9.0",
+    "ruff>=0.15.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=5.0.0",
+    "pytest-mock>=3.12.0",
+    "ruff>=0.7.0",
+    "mypy>=1.8.0",
+    "pre-commit>=3.6.0",
+    "types-requests>=2.32.0",
+    "faker>=20.0.0",
+    "responses>=0.24.0",
+]
+docs = [
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.0.0",
+    "mkdocstrings>=0.22.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/sandraschi/monitoring-mcp"
+Documentation = "https://github.com/sandraschi/monitoring-mcp#readme"
+Issues = "https://github.com/sandraschi/monitoring-mcp/issues"
+Source = "https://github.com/sandraschi/monitoring-mcp"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["monitoring_mcp*"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+    "ARG001", # unused-function-args
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
+    "TID", # flake8-tidy-imports
+    "Q",  # flake8-quotes
+    "RUF", # ruff-specific rules
+]
+ignore = [
+    "E501", # line too long, handled by black
+    "B008", # do not perform function calls in argument defaults
+    "C901", # too complex
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["monitoring_mcp"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+disallow_incomplete_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+show_error_codes = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+asyncio_mode = "auto"
+addopts = [
+    "-v",
+    "--cov=monitoring_mcp",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+    "--cov-fail-under=80",
+    "--strict-markers",
+    "--strict-config",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+
+[tool.coverage.run]
+source = ["monitoring_mcp"]
+omit = [
+    "tests/*",
+    "*/__pycache__/*",
+    "*/migrations/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 80
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+[tool.coverage.html]
+directory = "coverage_html"
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+# MCPB Packaging Configuration
+[tool.mcpb]
+name = "monitoring-mcp"
+version = "0.1.0"
+description = "FastMCP 2.14.3-powered monitoring server for Grafana, Prometheus, and Loki"
+author = "Sandra Schi"
+author_email = "sandra.schi@example.com"
+license = "MIT"
+homepage = "https://github.com/sandraschi/monitoring-mcp"
+repository = "https://github.com/sandraschi/monitoring-mcp"
+documentation = "https://github.com/sandraschi/monitoring-mcp#readme"
+keywords = ["monitoring", "grafana", "prometheus", "loki", "mcp", "fastmcp"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: System :: Monitoring",
+    "Topic :: System :: Systems Administration",
+]
+
+```
+
+### Package
+Source: web_sota\package.json
+```
+{
+  "name": "monitoring-mcp-sota",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
+    "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-progress": "^1.1.8",
+    "@radix-ui/react-scroll-area": "^1.2.10",
+    "@radix-ui/react-select": "^2.2.6",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-tabs": "^1.1.13",
+    "@radix-ui/react-tooltip": "^1.2.8",
+    "@tanstack/react-query": "^5.90.21",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.563.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.13.0",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss-animate": "^1.0.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "autoprefixer": "^10.4.24",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.48.0",
+    "vite": "^7.3.1"
+  }
+}
+
+```
+
+### Config
+Source: .git\config
+```
+[core]
+	repositoryformatversion = 0
+	filemode = false
+	bare = false
+	logallrefupdates = true
+	symlinks = false
+	ignorecase = true
+[remote "origin"]
+	url = https://github.com/sandraschi/monitoring-mcp.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "main"]
+	remote = origin
+	merge = refs/heads/main
+	vscode-merge-base = origin/main
+	vscode-merge-base = origin/main
+
+```
+
+## Optional - Full Content
+
+### Changelog
+Source: CHANGELOG.md
+```
+# Changelog
+
+All notable changes to the Monitoring MCP will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.1.0] - 2026-01-16
+
+### Added
+- **Initial Release**: Complete FastMCP 2.14.3-powered monitoring server
+- **Grafana Management Tool**: Comprehensive dashboard and panel operations
+  - List, create, update, delete dashboards
+  - Data source queries and management
+  - Dashboard analysis and optimization
+- **Prometheus Monitoring Tool**: Full PromQL query capabilities
+  - Instant and range queries
+  - Target health monitoring
+  - Alert rule management
+  - Query optimization suggestions
+- **Loki Logging Tool**: Complete LogQL operations
+  - Log queries with intelligent sampling
+  - Pattern recognition and anomaly detection
+  - Error correlation analysis
+  - Request tracing capabilities
+- **Cross-System Correlation Tool**: Intelligent incident analysis
+  - Root cause analysis with AI assistance
+  - Performance correlation across systems
+  - Error pattern correlation
+  - Comprehensive health assessment
+- **Status Monitoring Tool**: System health and diagnostics
+  - Connectivity testing
+  - Configuration validation
+  - Data flow monitoring
+  - Alert system status checks
+- **Conversational AI Responses**: Natural language summaries and insights
+- **Intelligent Sampling**: Automatic data reduction for large datasets
+- **Persistent Storage**: DiskStore backend with encryption
+- **Comprehensive Configuration**: Environment-based settings with Pydantic validation
+- **Structured Logging**: JSON-formatted logs with rich context
+- **Error Recovery**: Graceful degradation and automatic retry logic
+
+### Technical Features
+- **FastMCP 2.14.3 Integration**: Latest MCP framework features
+- **Portmanteau Tool Design**: Consolidated operations to avoid tool explosion
+- **Async/Await Pattern**: Full asynchronous operations throughout
+- **Type Safety**: Complete type hints with mypy compliance
+- **Modern Python**: Python 3.10+ with full modern syntax support
+- **Security**: Encrypted storage and authentication support
+- **Performance**: Intelligent caching and rate limiting
+- **Observability**: Self-monitoring capabilities
+
+### Documentation
+- **Comprehensive README**: Installation, usage examples, and API reference
+- **PRD**: Complete product requirements and architecture documentation
+- **Architecture Documentation**: System design and component details
+- **API Documentation**: Complete tool reference and examples
+- **Development Guide**: Setup, testing, and contribution guidelines
+
+### Development
+- **Testing Framework**: Comprehensive pytest suite with coverage
+- **Code Quality**: Ruff linting and formatting
+- **Type Checking**: MyPy static analysis
+- **CI/CD Ready**: GitHub Actions workflow templates
+- **Docker Support**: Containerized deployment ready
+- **IDE Integration**: Zed extension configuration
+
+### Dependencies
+- **Core**: FastMCP 2.14.3+, httpx, pydantic v2, py-key-value-aio
+- **Monitoring**: grafana-api, prometheus-api-client, loky
+- **Data Processing**: pandas, numpy, plotly
+- **Development**: pytest, ruff, mypy, pre-commit
+
+## [Unreleased]
+
+### Planned Features
+- **Alert Rule Management**: Full CRUD operations for alert rules
+- **Dashboard Templates**: Pre-built dashboard templates for common use cases
+- **Advanced Correlation**: Machine learning-based anomaly detection
+- **Performance Profiling**: Detailed performance analysis and recommendations
+- **Multi-Tenant Support**: Organization and user isolation
+- **Audit Logging**: Comprehensive operation audit trails
+- **Backup/Restore**: Configuration and data backup capabilities
+- **Web UI**: Optional web interface for direct interaction
+- **Plugin System**: Extensible architecture for custom tools
+- **Federated Queries**: Cross-cluster query capabilities
+
+### Improvements
+- **Query Optimization**: Advanced PromQL and LogQL optimization
+- **Caching**: Intelligent response caching with TTL
+- **Rate Limiting**: Advanced rate limiting with burst handling
+- **Error Recovery**: Enhanced error recovery with circuit breakers
+- **Metrics**: Detailed internal performance metrics
+- **Documentation**: Interactive API documentation
+- **Examples**: Comprehensive example library
+- **Tutorials**: Step-by-step usage tutorials
+
+### Technical Enhancements
+- **WebSocket Support**: Real-time streaming for live data
+- **GraphQL Integration**: Advanced query capabilities
+- **Machine Learning**: AI-powered insights and predictions
+- **Event Streaming**: Kafka/Redis integration for events
+- **Database Integration**: PostgreSQL/SQLite support
+- **Cloud Integration**: AWS CloudWatch, GCP Monitoring support
+- **Container Orchestration**: Kubernetes-native deployment
+- **Service Mesh**: Istio and Linkerd integration
+
+---
+
+## Version History
+
+### Development Versions
+- **0.1.0-dev**: Initial development release with core functionality
+- **0.0.1-alpha**: Pre-release alpha with basic tool implementations
+
+### Release Notes
+
+#### 0.1.0
+This is the first production-ready release of the Monitoring MCP server. It provides comprehensive monitoring capabilities across Grafana, Prometheus, and Loki with intelligent AI assistance.
+
+**Breaking Changes:**
+- None (initial release)
+
+**Migration Guide:**
+- No migration needed for initial release
+
+**Known Issues:**
+- Alert rule management operations are placeholders for future implementation
+- Some advanced correlation features are in early development
+- Docker deployment requires manual configuration
+
+**Security Notes:**
+- API keys are stored encrypted using Fernet encryption
+- No sensitive data is logged by default
+- Authentication is handled securely with proper error masking
+
+---
+
+## Contributing to Changelog
+
+When contributing to this project, please:
+1. Update the `Unreleased` section with your changes
+2. Move items to appropriate version sections when releasing
+3. Follow the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format
+4. Use present tense for changes (e.g., "Add feature" not "Added feature")
+5. Group changes under appropriate headings (Added, Changed, Deprecated, Removed, Fixed, Security)
+
+### Change Categories
+- **Added**: New features
+- **Changed**: Changes in existing functionality
+- **Deprecated**: Soon-to-be removed features
+- **Removed**: Removed features
+- **Fixed**: Bug fixes
+- **Security**: Security-related changes
+
+---
+
+## Release Process
+
+1. Update version in `pyproject.toml`
+2. Update `CHANGELOG.md` with release notes
+3. Create git tag
+4. Build and publish to PyPI
+5. Update documentation
+6. Announce release
+
+For more information, see [CONTRIBUTING.md](CONTRIBUTING.md).
+```
+
+### Contributing
+Source: CONTRIBUTING.md
+```
+# Contributing to Monitoring MCP
+
+Thank you for your interest in contributing to the Monitoring MCP Server! This document provides guidelines and information for contributors.
+
+## Development Setup
+
+### Prerequisites
+- Python 3.10+
+- Git
+
+### Installation
+```bash
+git clone https://github.com/sandraschi/monitoring-mcp.git
+cd monitoring-mcp
+pip install -e .[dev]
+```
+
+### Development Workflow
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/your-feature-name`
+3. Make your changes with comprehensive tests
+4. Run the quality checks: `make check` or `ruff check . && ruff format . && mypy src/ && pytest`
+5. Commit your changes: `git commit -m "Add your feature"`
+6. Push to your fork: `git push origin feature/your-feature-name`
+7. Create a Pull Request
+
+## Code Quality Standards
+
+### Linting and Formatting
+- Code must pass `ruff check .` and `ruff format --check .`
+- Type hints are required for all new code
+- Follow PEP 8 style guidelines
+
+### Testing
+- All new features must include comprehensive tests
+- Tests should achieve at least 80% code coverage
+- Run tests with `pytest`
+
+### Documentation
+- Update README.md for any user-facing changes
+- Add docstrings to all public functions and classes
+- Update type hints as needed
+
+## Pull Request Process
+
+1. **Title**: Use a clear, descriptive title
+2. **Description**: Explain what the PR does and why
+3. **Tests**: Ensure all tests pass
+4. **Documentation**: Update docs if needed
+5. **Review**: Request review from maintainers
+
+## Commit Message Guidelines
+
+Use conventional commit format:
+- `feat:` for new features
+- `fix:` for bug fixes
+- `docs:` for documentation
+- `style:` for formatting
+- `refactor:` for code refactoring
+- `test:` for testing
+- `chore:` for maintenance
+
+Example: `feat: add prometheus alerting support`
+
+## Architecture Guidelines
+
+### Portmanteau Pattern
+This project uses the "portmanteau tool" pattern to avoid tool explosion:
+- Consolidate related operations into single tools
+- Use operation parameters to route to specific functionality
+- Maintain clean separation of concerns
+
+### Async First
+- All I/O operations should be async
+- Use FastMCP's async capabilities
+- Avoid blocking operations in tool implementations
+
+### Error Handling
+- Provide conversational error messages
+- Include troubleshooting tips when possible
+- Gracefully degrade when services are unavailable
+
+## Issue Reporting
+
+When reporting bugs or requesting features:
+- Use the GitHub issue templates
+- Provide clear reproduction steps
+- Include relevant logs and configuration
+- Specify your environment (Python version, OS, etc.)
+
+## License
+
+By contributing to this project, you agree that your contributions will be licensed under the MIT License.
+```
+
+### License
+Source: LICENSE
+```
+MIT License
+
+Copyright (c) 2024 Sandra Schi
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
