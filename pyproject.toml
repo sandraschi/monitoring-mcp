@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "monitoring-mcp"
 version = "0.1.0"
-description = "FastMCP 2.14.3-powered monitoring server for Grafana, Prometheus, and Loki"
+description = "FastMCP 3.1.0-powered monitoring server for Grafana, Prometheus, and Loki"
 readme = "README.md"
 authors = [
     { name = "Sandra Schi", email = "sandra.schi@example.com" },
@@ -145,7 +145,7 @@ output = "coverage.xml"
 [tool.mcpb]
 name = "monitoring-mcp"
 version = "0.1.0"
-description = "FastMCP 2.14.3-powered monitoring server for Grafana, Prometheus, and Loki"
+description = "FastMCP 3.1.0-powered monitoring server for Grafana, Prometheus, and Loki"
 author = "Sandra Schi"
 author_email = "sandra.schi@example.com"
 license = "MIT"

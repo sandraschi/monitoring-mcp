@@ -1,5 +1,7 @@
 # Monitoring MCP Server
 
+[![FastMCP Version](https://img.shields.io/badge/FastMCP-3.1.0-blue?style=flat-square&logo=python&logoColor=white)](https://github.com/sandraschi/fastmcp) [![Linted with Biome](https://img.shields.io/badge/Linted_with-Biome-60a5fa?style=flat-square&logo=biome&logoColor=white)](https://biomejs.dev/) [![Built with Just](https://img.shields.io/badge/Built_with-Just-000000?style=flat-square&logo=gnu-bash&logoColor=white)](https://github.com/casey/just)
+
 [![CI](https://github.com/sandraschi/monitoring-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/sandraschi/monitoring-mcp/actions)
 [![codecov](https://codecov.io/gh/sandraschi/monitoring-mcp/branch/main/graph/badge.svg)](https://codecov.io/gh/sandraschi/monitoring-mcp)
 [![PyPI version](https://badge.fury.io/py/monitoring-mcp.svg)](https://pypi.org/project/monitoring-mcp/)
@@ -20,11 +22,11 @@
 [![Status](https://img.shields.io/badge/status-active-success.svg)](https://github.com/sandraschi/monitoring-mcp/pulse)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
-*A comprehensive FastMCP 2.14.3-powered monitoring server providing intelligent operations across Grafana, Prometheus, and Loki ecosystems with conversational AI assistance for DevOps workflows.*
+*A comprehensive FastMCP 3.1.0-powered monitoring server providing intelligent operations across Grafana, Prometheus, and Loki ecosystems with conversational AI assistance for DevOps workflows.*
 
 ##  Features
 
-### **FastMCP 2.14.3 Integration**
+### **FastMCP 3.1.0 Integration**
 -  **Conversational Tool Returns** - AI-friendly responses with actionable insights
 -  **Sampling Capabilities** - Intelligent data sampling for large result sets
 -  **Persistent Storage** - DiskStore backend for configuration and state
@@ -347,7 +349,7 @@ Add to your `claude_desktop_config.json`:
 ### Prerequisites
 - Python 3.10+
 - Access to Grafana, Prometheus, and Loki instances
-- FastMCP 2.14.3+ (installed automatically)
+- FastMCP 3.1.0+ (installed automatically)
 
 ### From PyPI (Recommended)
 
@@ -641,11 +643,22 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 6. Submit a pull request
 
 ### Code Standards
-- **FastMCP 2.14.3+**: Use latest features and patterns
+- **FastMCP 3.1.0+**: Use latest features and patterns
 - **Type Hints**: Full type coverage required
 - **Async First**: All operations should be async where appropriate
 - **Conversational**: Tool responses should be AI-friendly
 - **Documentation**: Comprehensive docstrings and examples
+
+
+## 🛡️ Industrial Quality Stack
+
+This project adheres to **SOTA 14.1** industrial standards for high-fidelity agentic orchestration:
+
+- **Python (Core)**: [Ruff](https://astral.sh/ruff) for linting and formatting. Zero-tolerance for `print` statements in core handlers (`T201`).
+- **Webapp (UI)**: [Biome](https://biomejs.dev/) for sub-millisecond linting. Strict `noConsoleLog` enforcement.
+- **Protocol Compliance**: Hardened `stdout/stderr` isolation to ensure crash-resistant JSON-RPC communication.
+- **Automation**: [Justfile](./justfile) recipes for all fleet operations (`just lint`, `just fix`, `just dev`).
+- **Security**: Automated audits via `bandit` and `safety`.
 
 ##  License
 
@@ -660,4 +673,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Built with  using FastMCP 2.14.3 for intelligent monitoring operations**
+**Built with  using FastMCP 3.1.0 for intelligent monitoring operations**
