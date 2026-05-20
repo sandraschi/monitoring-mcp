@@ -173,3 +173,5 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+_dashboard/
