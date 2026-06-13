@@ -16,7 +16,7 @@ import asyncio
 import logging
 
 from fastmcp import FastMCP
-from py_key_value_aio import DiskStore
+from key_value.aio.stores.disk.store import DiskStore
 
 # from .auth import authenticate # Handled by FastMCP web_app internally if needed, but dependencies=[Depends(authenticate)] was removed in favor of FastMCP standard
 from .config import MonitoringConfig
