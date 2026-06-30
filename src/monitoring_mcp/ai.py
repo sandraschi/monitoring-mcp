@@ -1,27 +1,62 @@
-from typing import Dict, Any, Optional
-from fastmcp import FastMCP
+import logging
+from typing import Any
+
 import httpx
-import os
+from fastmcp import FastMCP
+
+logger = logging.getLogger(__name__)
 
 
 class AIRouter:
-    """Standard AI router for System Monitoring MCP natural language processing."""
+    """AI router for monitoring MCP — calls Ollama / LM Studio for real responses."""
 
     def __init__(self, mcp_app: FastMCP):
         self.mcp = mcp_app
-        self.provider = os.getenv("AI_PROVIDER", "ollama")
-        self.endpoint = os.getenv("AI_ENDPOINT", "http://localhost:11434/api/generate")
-        self.model = os.getenv("AI_MODEL", "llama3.1-8b")
+        self.provider = "ollama"
+        self.base_url = "http://127.0.0.1:11434"
+        self.model = "llama3.2:3b"
 
-    async def process_command(self, query: str) -> Dict[str, Any]:
-        """Process natural language query and map to Monitoring MCP tools."""
-        # Standard SOTA AI routing placeholder
-        return {
-            "response": f"System Monitoring AI analysis: {query}. Routing to appropriate telemetry tool...",
-            "suggested_tool": "get_telemetry",
-            "status": "success",
+    async def process_command(self, query: str) -> dict[str, Any]:
+        """Process a chat message via the local LLM provider."""
+        try:
+            if self.provider == "ollama":
+                return await self._call_ollama(query)
+            return await self._call_lm_studio(query)
+        except Exception as e:
+            logger.warning(f"AI call failed, returning tool list: {e}")
+            return {
+                "reply": f"I couldn't reach the LLM ({e}). Here are the tools I can use.",
+                "tools": await self.get_tools_list(),
+            }
+
+    async def _call_ollama(self, query: str) -> dict[str, Any]:
+        payload = {
+            "model": self.model,
+            "prompt": f"You are a monitoring assistant. Answer concisely.\n\nUser: {query}\nAssistant:",
+            "stream": False,
         }
+        async with httpx.AsyncClient(timeout=30) as client:
+            r = await client.post(f"{self.base_url}/api/generate", json=payload)
+            r.raise_for_status()
+            data = r.json()
+            return {"reply": data.get("response", ""), "provider": "ollama"}
+
+    async def _call_lm_studio(self, query: str) -> dict[str, Any]:
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": "You are a monitoring assistant. Answer concisely."},
+                {"role": "user", "content": query},
+            ],
+            "stream": False,
+        }
+        async with httpx.AsyncClient(timeout=30) as client:
+            r = await client.post(f"{self.base_url}/v1/chat/completions", json=payload)
+            r.raise_for_status()
+            data = r.json()
+            text = data["choices"][0]["message"]["content"]
+            return {"reply": text, "provider": "lm_studio"}
 
     async def get_tools_list(self) -> list[str]:
-        """Get list of registered MCP tools."""
-        return [t.name for t in self.mcp._tools.values()]
+        tools = await self.mcp.list_tools()
+        return [t.name for t in tools]

@@ -12,7 +12,6 @@ import logging
 from typing import Any, Literal
 
 from fastmcp import FastMCP
-from py_key_value_aio import AbstractStore
 
 from monitoring_mcp.config import MonitoringConfig
 
@@ -37,9 +36,9 @@ CORRELATION_OPERATIONS = {
 }
 
 
-async def register_correlation_tool(
+def register_correlation_tool(
     mcp: FastMCP,
-    _storage: AbstractStore,
+    _storage: object,
     config: MonitoringConfig,
 ) -> None:
     """Register the cross-system correlation tool with the MCP server."""
@@ -254,9 +253,7 @@ async def _execute_correlation_operation(
 
         # Get error metrics
         error_metrics_query = metric_query or 'rate(http_requests_total{status=~"5.."}[5m])'
-        error_metrics = await prometheus_client.query_range(
-            error_metrics_query, start_time, end_time
-        )
+        error_metrics = await prometheus_client.query_range(error_metrics_query, start_time, end_time)
 
         # Get error logs
         error_logs_query = log_query or error_pattern or '{job=~".*"} |= "ERROR" or "Exception"'
@@ -329,15 +326,7 @@ def _generate_correlation_summary(operation: str, result: dict[str, Any]) -> str
         correlation = result.get("correlation", {})
         score = result.get("performance_score", 0)
         bottlenecks = result.get("bottlenecks_identified", 0)
-        perf_desc = (
-            "excellent"
-            if score > 90
-            else "good"
-            if score > 75
-            else "concerning"
-            if score > 50
-            else "poor"
-        )
+        perf_desc = "excellent" if score > 90 else "good" if score > 75 else "concerning" if score > 50 else "poor"
         return f"I analyzed your system performance and found {bottlenecks} potential bottleneck{'s' if bottlenecks != 1 else ''}. Overall performance is {perf_desc} with a score of {score}/100."
 
     elif operation == "error_correlation":
@@ -349,15 +338,7 @@ def _generate_correlation_summary(operation: str, result: dict[str, Any]) -> str
     elif operation == "health_assessment":
         score = result.get("overall_health_score", 0)
         critical = result.get("critical_issues", 0)
-        health_desc = (
-            "excellent"
-            if score > 90
-            else "good"
-            if score > 75
-            else "fair"
-            if score > 50
-            else "poor"
-        )
+        health_desc = "excellent" if score > 90 else "good" if score > 75 else "fair" if score > 50 else "poor"
         return f"I performed a comprehensive health assessment and gave your system an overall score of {score}/100 ({health_desc}). There are {critical} critical issue{'s' if critical != 1 else ''} that need{'s' if critical == 1 else ''} attention."
 
     else:
@@ -379,9 +360,7 @@ def _generate_correlation_insights(operation: str, result: dict[str, Any]) -> di
     elif operation == "find_root_cause":
         confidence = result.get("confidence_score", 0)
         if confidence > 80:
-            insights["recommendations"].append(
-                "High-confidence root cause identified - consider immediate remediation"
-            )
+            insights["recommendations"].append("High-confidence root cause identified - consider immediate remediation")
 
     elif operation == "performance_correlation":
         bottlenecks = result.get("bottlenecks_identified", 0)
@@ -478,17 +457,12 @@ def _analyze_root_cause(
 
     # Analyze metrics for patterns
     metrics_result = metrics_data.get("data", {}).get("result", [])
-    error_rate_found = any(
-        "error" in str(series.get("metric", {})).lower() for series in metrics_result
-    )
+    error_rate_found = any("error" in str(series.get("metric", {})).lower() for series in metrics_result)
 
     # Analyze logs for error patterns
     logs_result = logs_data.get("data", {}).get("result", [])
     error_logs_found = any(
-        any(
-            "ERROR" in str(entry[1]).upper() or "Exception" in str(entry[1])
-            for entry in stream.get("values", [])
-        )
+        any("ERROR" in str(entry[1]).upper() or "Exception" in str(entry[1]) for entry in stream.get("values", []))
         for stream in logs_result
     )
 
@@ -530,9 +504,7 @@ def _analyze_root_cause(
     return analysis
 
 
-def _correlate_performance_data(
-    perf_data: dict[str, Any], perf_logs: dict[str, Any]
-) -> dict[str, Any]:
+def _correlate_performance_data(perf_data: dict[str, Any], perf_logs: dict[str, Any]) -> dict[str, Any]:
     """Correlate performance metrics with system events."""
     correlation = {
         "overall_performance_score": 75,
@@ -564,8 +536,7 @@ def _correlate_performance_data(
     # Analyze performance-related logs
     logs_result = perf_logs.get("data", {}).get("result", [])
     perf_issues = sum(
-        len([entry for entry in stream.get("values", []) if "slow" in str(entry[1]).lower()])
-        for stream in logs_result
+        len([entry for entry in stream.get("values", []) if "slow" in str(entry[1]).lower()]) for stream in logs_result
     )
 
     if perf_issues > 0:
@@ -581,14 +552,10 @@ def _correlate_performance_data(
     bottleneck_count = len(correlation["bottlenecks"])
     if bottleneck_count == 0:
         correlation["overall_performance_score"] = 95
-        correlation["summary"] = (
-            "System performance appears healthy with no significant bottlenecks detected."
-        )
+        correlation["summary"] = "System performance appears healthy with no significant bottlenecks detected."
     elif bottleneck_count <= 2:
         correlation["overall_performance_score"] = 80
-        correlation["summary"] = (
-            "System performance is acceptable with minor bottlenecks to address."
-        )
+        correlation["summary"] = "System performance is acceptable with minor bottlenecks to address."
     else:
         correlation["overall_performance_score"] = 60
         correlation["summary"] = "System performance has multiple bottlenecks requiring attention."
@@ -596,9 +563,7 @@ def _correlate_performance_data(
     return correlation
 
 
-def _correlate_error_data(
-    error_metrics: dict[str, Any], error_logs: dict[str, Any]
-) -> dict[str, Any]:
+def _correlate_error_data(error_metrics: dict[str, Any], error_logs: dict[str, Any]) -> dict[str, Any]:
     """Link error logs with relevant metrics."""
     correlation = {
         "error_clusters": [],
@@ -757,9 +722,7 @@ async def _perform_health_assessment(
 
     # Generate recommendations
     if assessment["overall_score"] < 70:
-        assessment["recommendations"].append(
-            "Overall system health is concerning - review critical issues above"
-        )
+        assessment["recommendations"].append("Overall system health is concerning - review critical issues above")
 
     if assessment["critical_issues"]:
         assessment["recommendations"].append(

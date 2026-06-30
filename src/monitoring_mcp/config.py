@@ -48,21 +48,13 @@ class MonitoringConfig(BaseSettings):
 
     # Server endpoints
     grafana_url: str = Field(default="http://localhost:3000", description="Grafana server URL")
-    prometheus_url: str = Field(
-        default="http://localhost:9090", description="Prometheus server URL"
-    )
+    prometheus_url: str = Field(default="http://localhost:9090", description="Prometheus server URL")
     loki_url: str = Field(default="http://localhost:3100", description="Loki server URL")
 
     # Authentication
-    grafana_api_key: SecretStr | None = Field(
-        default=None, description="Grafana API key for authentication"
-    )
-    grafana_username: str | None = Field(
-        default=None, description="Grafana username (alternative to API key)"
-    )
-    grafana_password: SecretStr | None = Field(
-        default=None, description="Grafana password (alternative to API key)"
-    )
+    grafana_api_key: SecretStr | None = Field(default=None, description="Grafana API key for authentication")
+    grafana_username: str | None = Field(default=None, description="Grafana username (alternative to API key)")
+    grafana_password: SecretStr | None = Field(default=None, description="Grafana password (alternative to API key)")
 
     # Storage configuration
     storage_path: Path = Field(
@@ -76,31 +68,17 @@ class MonitoringConfig(BaseSettings):
 
     # Performance settings
     request_timeout: int = Field(default=30, description="Request timeout in seconds", ge=5, le=300)
-    max_concurrent_requests: int = Field(
-        default=10, description="Maximum concurrent requests", ge=1, le=100
-    )
-    max_results_limit: int = Field(
-        default=1000, description="Maximum results to return in queries", ge=10, le=10000
-    )
+    max_concurrent_requests: int = Field(default=10, description="Maximum concurrent requests", ge=1, le=100)
+    max_results_limit: int = Field(default=1000, description="Maximum results to return in queries", ge=10, le=10000)
 
     # Logging
-    log_level: str = Field(
-        default="INFO", description="Logging level", pattern="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$"
-    )
-    enable_structured_logging: bool = Field(
-        default=True, description="Enable structured JSON logging"
-    )
+    log_level: str = Field(default="INFO", description="Logging level", pattern="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$")
+    enable_structured_logging: bool = Field(default=True, description="Enable structured JSON logging")
 
     # Sampling configuration for large datasets
-    enable_sampling: bool = Field(
-        default=True, description="Enable intelligent sampling for large result sets"
-    )
-    sampling_threshold: int = Field(
-        default=10000, description="Threshold for triggering sampling", ge=100, le=100000
-    )
-    sampling_rate: float = Field(
-        default=0.1, description="Sampling rate (0.0-1.0)", ge=0.01, le=1.0
-    )
+    enable_sampling: bool = Field(default=True, description="Enable intelligent sampling for large result sets")
+    sampling_threshold: int = Field(default=10000, description="Threshold for triggering sampling", ge=100, le=100000)
+    sampling_rate: float = Field(default=0.1, description="Sampling rate (0.0-1.0)", ge=0.01, le=1.0)
 
     # Cache settings
     enable_cache: bool = Field(default=True, description="Enable response caching")

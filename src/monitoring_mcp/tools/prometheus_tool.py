@@ -13,7 +13,6 @@ from typing import Any, Literal
 
 import httpx
 from fastmcp import FastMCP
-from py_key_value_aio import AbstractStore
 
 from monitoring_mcp.config import MonitoringConfig
 
@@ -76,9 +75,7 @@ class PrometheusClient:
             params["time"] = time
         return await self._make_request("query", params)
 
-    async def query_range(
-        self, query: str, start: str, end: str, step: str = "15s"
-    ) -> dict[str, Any]:
+    async def query_range(self, query: str, start: str, end: str, step: str = "15s") -> dict[str, Any]:
         """Execute range query."""
         params = {
             "query": query,
@@ -105,9 +102,9 @@ class PrometheusClient:
         return await self._make_request("buildinfo")
 
 
-async def register_prometheus_tool(
+def register_prometheus_tool(
     mcp: FastMCP,
-    _storage: AbstractStore,
+    _storage: object,
     config: MonitoringConfig,
 ) -> None:
     """Register the Prometheus portmanteau tool with the MCP server."""
@@ -232,10 +229,10 @@ async def _execute_prometheus_operation(
     end_time: str | None = None,
     step: str | None = None,
     target_name: str | None = None,
-    rule_group: str | None = None,  # noqa: ARG001
-    alert_name: str | None = None,  # noqa: ARG001
-    silence_data: dict[str, Any] | None = None,  # noqa: ARG001
-    silence_id: str | None = None,  # noqa: ARG001
+    rule_group: str | None = None,
+    alert_name: str | None = None,
+    silence_data: dict[str, Any] | None = None,
+    silence_id: str | None = None,
     analysis_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Execute the specific Prometheus operation."""
@@ -283,9 +280,7 @@ async def _execute_prometheus_operation(
 
         if target_name:
             # Filter for specific target
-            matching_targets = [
-                t for t in targets if t.get("labels", {}).get("__name__") == target_name
-            ]
+            matching_targets = [t for t in targets if t.get("labels", {}).get("__name__") == target_name]
             targets = matching_targets
 
         health_summary = {
@@ -307,10 +302,7 @@ async def _execute_prometheus_operation(
         result = await client.rules()
         groups = result.get("data", {}).get("groups", [])
         total_rules = sum(len(group.get("rules", [])) for group in groups)
-        alert_rules = sum(
-            len([r for r in group.get("rules", []) if r.get("type") == "alerting"])
-            for group in groups
-        )
+        alert_rules = sum(len([r for r in group.get("rules", []) if r.get("type") == "alerting"]) for group in groups)
 
         return {
             "success": True,
@@ -438,9 +430,7 @@ def _generate_prometheus_summary(operation: str, result: dict[str, Any]) -> str:
         pending = summary.get("pending", 0)
         total = summary.get("total", 0)
         if total == 0:
-            return (
-                "Great news! You have no active alerts. Your systems appear to be running smoothly."
-            )
+            return "Great news! You have no active alerts. Your systems appear to be running smoothly."
         return f"I found {total} alerts: {firing} firing, {pending} pending. {'Some alerts need immediate attention.' if firing > 0 else 'Some alerts are developing - keep an eye on them.'}"
 
     elif operation == "get_build_info":
@@ -469,9 +459,7 @@ def _generate_prometheus_insights(operation: str, result: dict[str, Any]) -> dic
         healthy = result.get("healthy_targets", 0)
         total = result.get("target_count", 0)
         if total > 0 and (healthy / total) < 0.9:
-            insights["recommendations"].append(
-                "Consider reviewing target configurations for unhealthy endpoints"
-            )
+            insights["recommendations"].append("Consider reviewing target configurations for unhealthy endpoints")
 
     elif operation == "list_alerts":
         summary = result.get("alert_summary", {})
@@ -546,9 +534,7 @@ def _analyze_metrics_data(metrics_data: dict[str, Any], _context: dict[str, Any]
     if not analysis["anomalies"]:
         analysis["summary"] = "No significant anomalies detected in the metrics data."
     else:
-        analysis["summary"] = (
-            f"Found {len(analysis['anomalies'])} potential issues in your metrics."
-        )
+        analysis["summary"] = f"Found {len(analysis['anomalies'])} potential issues in your metrics."
 
     return analysis
 
@@ -558,9 +544,7 @@ def _analyze_query_performance(query: str) -> list[dict[str, str]]:
     optimizations = []
 
     # Basic PromQL optimization checks
-    if (
-        "rate(" in query and "[5m]" in query and "irate(" not in query
-    ):  # irate is more appropriate for recent data
+    if "rate(" in query and "[5m]" in query and "irate(" not in query:  # irate is more appropriate for recent data
         optimizations.append(
             {
                 "type": "rate_vs_irate",

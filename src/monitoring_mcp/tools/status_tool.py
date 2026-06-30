@@ -12,7 +12,6 @@ import logging
 from typing import Any, Literal
 
 from fastmcp import FastMCP
-from py_key_value_aio import AbstractStore
 
 from monitoring_mcp.config import MonitoringConfig
 
@@ -37,9 +36,9 @@ STATUS_OPERATIONS = {
 }
 
 
-async def register_status_tool(
+def register_status_tool(
     mcp: FastMCP,
-    _storage: AbstractStore,
+    _storage: object,
     config: MonitoringConfig,
 ) -> None:
     """Register the status and health monitoring tool with the MCP server."""
@@ -217,9 +216,7 @@ def _format_connectivity_result(operation: str, connectivity: dict[str, Any]) ->
         "success": True,
         "operation": operation,
         "connectivity": connectivity,
-        "successful_connections": sum(
-            1 for c in connectivity.values() if c.get("status") == "connected"
-        ),
+        "successful_connections": sum(1 for c in connectivity.values() if c.get("status") == "connected"),
         "total_tests": len(connectivity),
     }
 
@@ -347,9 +344,7 @@ def _generate_status_insights(operation: str, result: dict[str, Any]) -> dict[st
         status = result.get("overall_status", "unknown")
 
         if status == "unhealthy":
-            insights["recommendations"].append(
-                "Critical system health issues detected - immediate attention required"
-            )
+            insights["recommendations"].append("Critical system health issues detected - immediate attention required")
         elif issues > 0:
             insights["recommendations"].append(
                 f"Address {issues} system health issue{'s' if issues != 1 else ''} to maintain optimal monitoring"
@@ -597,9 +592,7 @@ async def _validate_configurations(
 
             # Check for Prometheus and Loki datasources
             has_prometheus = any(ds.get("type") == "prometheus" for ds in datasources)
-            has_loki = any(
-                ds.get("type") in ["loki", "grafana-loki-datasource"] for ds in datasources
-            )
+            has_loki = any(ds.get("type") in ["loki", "grafana-loki-datasource"] for ds in datasources)
 
             validation["grafana"] = {
                 "status": "valid",
@@ -612,9 +605,7 @@ async def _validate_configurations(
             }
 
             if not has_prometheus:
-                validation["grafana"]["recommendations"].append(
-                    "Add Prometheus datasource for metrics"
-                )
+                validation["grafana"]["recommendations"].append("Add Prometheus datasource for metrics")
             if not has_loki:
                 validation["grafana"]["recommendations"].append("Add Loki datasource for logs")
 
@@ -754,9 +745,7 @@ async def _check_data_flow(
     if "loki" in component_filter and "grafana" in component_filter:
         try:
             datasources = await grafana_client.list_datasources()
-            has_loki_ds = any(
-                ds.get("type") in ["loki", "grafana-loki-datasource"] for ds in datasources
-            )
+            has_loki_ds = any(ds.get("type") in ["loki", "grafana-loki-datasource"] for ds in datasources)
 
             if has_loki_ds:
                 data_flow["flows"]["loki_to_grafana"] = {

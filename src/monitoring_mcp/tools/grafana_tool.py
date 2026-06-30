@@ -13,7 +13,6 @@ from typing import Any, Literal
 
 import httpx
 from fastmcp import FastMCP
-from py_key_value_aio import AbstractStore
 
 from monitoring_mcp.config import MonitoringConfig
 
@@ -84,18 +83,14 @@ class GrafanaClient:
         """Get dashboard by UID."""
         return await self._make_request("GET", f"dashboards/uid/{uid}")
 
-    async def create_dashboard(
-        self, dashboard: dict[str, Any], folder_id: int | None = None
-    ) -> dict[str, Any]:
+    async def create_dashboard(self, dashboard: dict[str, Any], folder_id: int | None = None) -> dict[str, Any]:
         """Create new dashboard."""
         data = {"dashboard": dashboard}
         if folder_id is not None:
             data["folderId"] = folder_id
         return await self._make_request("POST", "dashboards/db", data)
 
-    async def update_dashboard(
-        self, dashboard: dict[str, Any], uid: str, overwrite: bool = True
-    ) -> dict[str, Any]:
+    async def update_dashboard(self, dashboard: dict[str, Any], uid: str, overwrite: bool = True) -> dict[str, Any]:
         """Update existing dashboard."""
         data = {"dashboard": dashboard, "overwrite": overwrite}
         return await self._make_request("POST", "dashboards/db", data)
@@ -120,9 +115,9 @@ class GrafanaClient:
         return await self._make_request("POST", f"ds/query?dsid={datasource_id}", data)
 
 
-async def register_grafana_tool(
+def register_grafana_tool(
     mcp: FastMCP,
-    _storage: AbstractStore,
+    _storage: object,
     config: MonitoringConfig,
 ) -> None:
     """Register the Grafana portmanteau tool with the MCP server."""
@@ -247,17 +242,17 @@ async def _execute_grafana_operation(
     client: GrafanaClient,
     operation: str,
     dashboard_uid: str | None = None,
-    dashboard_title: str | None = None,  # noqa: ARG001
+    dashboard_title: str | None = None,
     dashboard_data: dict[str, Any] | None = None,
     folder_id: int | None = None,
     search_query: str | None = None,
     datasource_id: int | None = None,
     queries: list[dict[str, Any]] | None = None,
     time_range: dict[str, str] | None = None,
-    panel_data: dict[str, Any] | None = None,  # noqa: ARG001
-    alert_rule: dict[str, Any] | None = None,  # noqa: ARG001
-    folder_name: str | None = None,  # noqa: ARG001
-    permissions_data: dict[str, Any] | None = None,  # noqa: ARG001
+    panel_data: dict[str, Any] | None = None,
+    alert_rule: dict[str, Any] | None = None,
+    folder_name: str | None = None,
+    permissions_data: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Execute the specific Grafana operation."""
 
@@ -452,9 +447,7 @@ def _generate_ai_insights(operation: str, result: dict[str, Any]) -> dict[str, A
     elif operation == "list_dashboards":
         dashboards = result.get("data", [])
         if len(dashboards) > 50:
-            insights["recommendations"].append(
-                "Consider organizing dashboards into folders for better navigation"
-            )
+            insights["recommendations"].append("Consider organizing dashboards into folders for better navigation")
 
         # Check for dashboards without recent updates
         # (Would need timestamp data from Grafana)

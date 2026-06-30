@@ -13,7 +13,6 @@ from typing import Any, Literal
 
 import httpx
 from fastmcp import FastMCP
-from py_key_value_aio import AbstractStore
 
 from monitoring_mcp.config import MonitoringConfig
 
@@ -116,9 +115,7 @@ class LokiClient:
         """Get values for a specific label."""
         return await self._make_request(f"loki/api/v1/label/{label}/values")
 
-    async def series(
-        self, match: list[str], start: str | None = None, end: str | None = None
-    ) -> dict[str, Any]:
+    async def series(self, match: list[str], start: str | None = None, end: str | None = None) -> dict[str, Any]:
         """Get series information."""
         params = {"match": match}
         if start:
@@ -128,9 +125,9 @@ class LokiClient:
         return await self._make_request("loki/api/v1/series", params)
 
 
-async def register_loki_tool(
+def register_loki_tool(
     mcp: FastMCP,
-    _storage: AbstractStore,
+    _storage: object,
     config: MonitoringConfig,
 ) -> None:
     """Register the Loki portmanteau tool with the MCP server."""
@@ -257,8 +254,8 @@ async def _execute_loki_operation(
     label_name: str | None = None,
     match_patterns: list[str] | None = None,
     analysis_context: dict[str, Any] | None = None,
-    export_format: str | None = None,  # noqa: ARG001
-    comparison_periods: dict[str, Any] | None = None,  # noqa: ARG001
+    export_format: str | None = None,
+    comparison_periods: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Execute the specific Loki operation."""
 
@@ -428,9 +425,7 @@ def _generate_loki_summary(operation: str, result: dict[str, Any]) -> str:
         time_info = ""
         if operation == "query_range":
             time_range = result.get("time_range", {})
-            time_info = (
-                f" from {time_range.get('start', 'unknown')} to {time_range.get('end', 'unknown')}"
-            )
+            time_info = f" from {time_range.get('start', 'unknown')} to {time_range.get('end', 'unknown')}"
 
         if entries == 0:
             return f"I searched your logs{time_info} but didn't find any entries matching your query. You might want to check your LogQL syntax or expand your time range."
@@ -510,9 +505,7 @@ def _generate_loki_insights(operation: str, result: dict[str, Any]) -> dict[str,
         analysis = result.get("analysis", {})
         anomalies = analysis.get("anomalies", [])
         if anomalies:
-            insights["recommendations"].append(
-                f"Review {len(anomalies)} anomalous log patterns for potential issues"
-            )
+            insights["recommendations"].append(f"Review {len(anomalies)} anomalous log patterns for potential issues")
 
     return insights
 
@@ -536,11 +529,7 @@ def _analyze_log_patterns(log_data: dict[str, Any], _context: dict[str, Any]) ->
 
     # Look for common error patterns
     error_patterns = ["ERROR", "Exception", "Failed", "Timeout", "Connection refused"]
-    error_count = sum(
-        1
-        for msg in all_messages
-        if any(pattern.lower() in msg.lower() for pattern in error_patterns)
-    )
+    error_count = sum(1 for msg in all_messages if any(pattern.lower() in msg.lower() for pattern in error_patterns))
 
     # Look for common HTTP status patterns
     http_patterns = ["200", "404", "500", "403", "502"]
@@ -639,13 +628,7 @@ def _detect_log_anomalies(log_data: dict[str, Any], _context: dict[str, Any]) ->
     if not analysis["anomalies"]:
         analysis["summary"] = "No significant anomalies detected in the log sample."
     else:
-        severity = (
-            "high"
-            if analysis["severity_score"] > 3
-            else "medium"
-            if analysis["severity_score"] > 1
-            else "low"
-        )
+        severity = "high" if analysis["severity_score"] > 3 else "medium" if analysis["severity_score"] > 1 else "low"
         analysis["summary"] = (
             f"Detected {len(analysis['anomalies'])} anomal{'ies' if len(analysis['anomalies']) != 1 else 'y'} with {severity} severity."
         )
@@ -689,21 +672,13 @@ def _search_error_patterns(log_data: dict[str, Any], _context: dict[str, Any]) -
 
                 # Categorize error types
                 if "timeout" in message.lower():
-                    analysis["error_types"]["timeout"] = (
-                        analysis["error_types"].get("timeout", 0) + 1
-                    )
+                    analysis["error_types"]["timeout"] = analysis["error_types"].get("timeout", 0) + 1
                 elif "connection" in message.lower():
-                    analysis["error_types"]["connection"] = (
-                        analysis["error_types"].get("connection", 0) + 1
-                    )
+                    analysis["error_types"]["connection"] = analysis["error_types"].get("connection", 0) + 1
                 elif "500" in message:
-                    analysis["error_types"]["server_error"] = (
-                        analysis["error_types"].get("server_error", 0) + 1
-                    )
+                    analysis["error_types"]["server_error"] = analysis["error_types"].get("server_error", 0) + 1
                 elif "exception" in message.lower():
-                    analysis["error_types"]["exception"] = (
-                        analysis["error_types"].get("exception", 0) + 1
-                    )
+                    analysis["error_types"]["exception"] = analysis["error_types"].get("exception", 0) + 1
                 else:
                     analysis["error_types"]["other"] = analysis["error_types"].get("other", 0) + 1
 
@@ -721,9 +696,7 @@ def _search_error_patterns(log_data: dict[str, Any], _context: dict[str, Any]) -
         analysis["summary"] = "No error messages found in the log sample."
     else:
         top_error_type = (
-            max(analysis["error_types"].items(), key=lambda x: x[1])
-            if analysis["error_types"]
-            else ("unknown", 0)
+            max(analysis["error_types"].items(), key=lambda x: x[1]) if analysis["error_types"] else ("unknown", 0)
         )
         analysis["summary"] = (
             f"Found {analysis['error_count']} error messages, with '{top_error_type[0]}' being the most common type."
@@ -762,9 +735,7 @@ def _analyze_request_traces(log_data: dict[str, Any]) -> dict[str, Any]:
                 matches = re.findall(pattern, message, re.IGNORECASE)
                 if matches:
                     analysis["correlation_ids"].update(matches)
-                    trace_entries.append(
-                        {"timestamp": timestamp, "message": message, "correlation_ids": matches}
-                    )
+                    trace_entries.append({"timestamp": timestamp, "message": message, "correlation_ids": matches})
 
         if trace_entries:
             analysis["request_traces"].append(

@@ -1,7 +1,7 @@
 """
 Monitoring MCP Server
 
-A FastMCP 2.14.3-powered monitoring server for comprehensive observability
+A FastMCP 3.2+-powered monitoring server for comprehensive observability
 across Grafana, Prometheus, and Loki ecosystems.
 
 Provides intelligent monitoring operations with conversational AI assistance

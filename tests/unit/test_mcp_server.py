@@ -103,9 +103,7 @@ class TestMonitoringMCPServer:
     @patch("monitoring_mcp.mcp_server.register_loki_tool")
     @patch("monitoring_mcp.mcp_server.register_correlation_tool")
     @patch("monitoring_mcp.mcp_server.register_status_tool")
-    def test_tool_registration(
-        self, mock_status, mock_correlation, mock_loki, mock_prometheus, mock_grafana, server
-    ):
+    def test_tool_registration(self, mock_status, mock_correlation, mock_loki, mock_prometheus, mock_grafana, server):
         """Test that all tools are registered."""
         # Reset mocks to check calls
         mock_grafana.reset_mock()
@@ -125,22 +123,24 @@ class TestMonitoringMCPServer:
         mock_status.assert_called_once()
 
     @patch("monitoring_mcp.mcp_server.MonitoringMCPServer._cleanup")
-    @patch("monitoring_mcp.mcp_server.MonitoringMCPServer.storage")
-    async def test_server_lifecycle(self, mock_storage, mock_cleanup, server):
+    async def test_server_lifecycle(self, mock_cleanup, server):
         """Test server startup and shutdown lifecycle."""
-        # Mock the MCP run method
-        with (
-            patch.object(server.mcp, "run", new_callable=AsyncMock) as mock_run,
-            patch.object(server.storage, "initialize", new_callable=AsyncMock) as mock_init,
-        ):
-            # Mock KeyboardInterrupt to exit cleanly
-            mock_run.side_effect = KeyboardInterrupt()
+        # Replace storage with a mock
+        mock_store = AsyncMock()
+        mock_store.setup = AsyncMock()
+        mock_store.close = AsyncMock()
+        server.storage = mock_store
 
-            # Run the server
-            await server.run()
+        # Mock the MCP run method to simulate clean shutdown
+        with patch.object(server.mcp, "run_stdio_async", new_callable=AsyncMock) as mock_run:
+            mock_run.side_effect = RuntimeError("Server stopped")
 
-            # Verify initialization and cleanup were called
-            mock_init.assert_called_once()
+            # Run the server - expect the error to propagate
+            with pytest.raises(RuntimeError, match="Server stopped"):
+                await server.run()
+
+            # Verify initialization was called
+            mock_store.setup.assert_called_once()
             mock_cleanup.assert_called_once()
 
     async def test_cleanup_handles_errors(self, server):
@@ -154,9 +154,9 @@ class TestMonitoringMCPServer:
         # Should not expose sensitive information
         str_repr = str(server.config)
         assert "MonitoringConfig" in str_repr
-        assert "localhost:3000" in str_repr
-        assert "localhost:9090" in str_repr
-        assert "localhost:3100" in str_repr
+        assert "test-grafana:3000" in str_repr
+        assert "test-prometheus:9090" in str_repr
+        assert "test-loki:3100" in str_repr
 
 
 class TestCreateMonitoringServer:
@@ -174,9 +174,9 @@ class TestCreateMonitoringServer:
         call_args = mock_server_class.call_args
         config = call_args[0][0]
 
-        assert config.grafana_url is None  # Should use defaults
-        assert config.prometheus_url is None
-        assert config.loki_url is None
+        assert config.grafana_url == "http://localhost:3000"
+        assert config.prometheus_url == "http://localhost:9090"
+        assert config.loki_url == "http://localhost:3100"
 
     @patch("monitoring_mcp.mcp_server.MonitoringMCPServer")
     def test_create_server_with_custom_urls(self, mock_server_class):
@@ -221,10 +221,15 @@ class TestMonitoringMCPIntegration:
         server = MonitoringMCPServer(config)
 
         # Mock the MCP to raise KeyboardInterrupt immediately
+        mock_store = AsyncMock()
+        mock_store.setup = AsyncMock()
+        mock_store.close = AsyncMock()
+        server.storage = mock_store
+
         with (
-            patch.object(server.mcp, "run", side_effect=KeyboardInterrupt()),
-            patch.object(server.storage, "initialize", new_callable=AsyncMock),
+            patch.object(server.mcp, "run_stdio_async", side_effect=RuntimeError("Server stopped")),
             patch.object(server, "_cleanup", new_callable=AsyncMock) as mock_cleanup,
         ):
-            await server.run()
+            with pytest.raises(RuntimeError, match="Server stopped"):
+                await server.run()
             mock_cleanup.assert_called_once()

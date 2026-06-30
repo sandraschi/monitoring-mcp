@@ -1,13 +1,13 @@
 """
-Monitoring MCP Server - FastMCP 2.14.3 Implementation
+Monitoring MCP Server - FastMCP 3.2+ Implementation
 
 A comprehensive monitoring server providing intelligent operations across
 Grafana, Prometheus, and Loki ecosystems with conversational AI assistance.
 
 Features:
-- Portmanteau tools following database-mcp pattern to avoid tool explosion
+- Portmanteau tools following the industrial portmanteau pattern
 - Conversational responses with structured data and natural language summaries
-- Sampling capabilities for handling large datasets efficiently
+- Real AI chat via local LLM (Ollama / LM Studio)
 - Persistent storage with DiskStore backend
 - Modern Python with full type annotations and async patterns
 """
@@ -18,15 +18,13 @@ import logging
 from fastmcp import FastMCP
 from key_value.aio.stores.disk.store import DiskStore
 
-# from .auth import authenticate # Handled by FastMCP web_app internally if needed, but dependencies=[Depends(authenticate)] was removed in favor of FastMCP standard
 from .config import MonitoringConfig
 from .tools.correlation_tool import register_correlation_tool
 from .tools.grafana_tool import register_grafana_tool
 from .tools.loki_tool import register_loki_tool
 from .tools.prometheus_tool import register_prometheus_tool
 from .tools.status_tool import register_status_tool
-from .transport import run_server
-from .web import setup_webapp
+from .transport import create_argument_parser, run_server_async
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +32,6 @@ logger = logging.getLogger(__name__)
 mcp = FastMCP(
     name="monitoring-mcp",
     version="0.1.0",
-    description="Intelligent monitoring operations for Grafana, Prometheus, and Loki",
     instructions="""
     You are an expert monitoring assistant with deep knowledge of Grafana, Prometheus, and Loki.
     Provide conversational, actionable responses that help users understand their monitoring data.
@@ -50,17 +47,17 @@ mcp = FastMCP(
     """,
 )
 
-# SOTA Integration: Setup webapp bridge
-setup_webapp(mcp.web_app, mcp_app=mcp)
-
 
 class MonitoringMCPServer:
     """
-    FastMCP 2.14.3-powered monitoring server for Grafana, Prometheus, and Loki.
+    FastMCP 3.2+-powered monitoring server for Grafana, Prometheus, and Loki.
 
     Provides comprehensive observability tools with intelligent AI assistance
     for DevOps workflows, performance analysis, and system diagnostics.
     """
+
+    # Class-level attribute for mock compatibility
+    storage = None
 
     def __init__(self, config: MonitoringConfig | None = None):
         """
@@ -74,8 +71,7 @@ class MonitoringMCPServer:
 
         # Initialize persistent storage
         self.storage = DiskStore(
-            path=self.config.storage_path / "monitoring_mcp",
-            encryption_key=self.config.encryption_key,
+            directory=self.config.storage_path / "monitoring_mcp",
         )
 
         # Register all portmanteau tools
@@ -105,12 +101,48 @@ class MonitoringMCPServer:
     async def run(self) -> None:
         """Main entry point for the Monitoring Hub MCP server."""
         # Initialize storage if needed
-        await self.storage.initialize()
+        await self.storage.setup()
 
         try:
-            run_server(self.mcp, server_name="monitoring-mcp")
+            parser = create_argument_parser("monitoring-mcp")
+            args = parser.parse_args(["--stdio"])
+            await run_server_async(self.mcp, args=args, server_name="monitoring-mcp")
         finally:
             await self._cleanup()
+
+    async def _cleanup(self) -> None:
+        """Clean up resources on shutdown."""
+        if self.storage:
+            try:
+                await self.storage.close()
+            except Exception:
+                logger.warning("Error during storage cleanup", exc_info=True)
+
+
+def create_monitoring_server(
+    grafana_url: str | None = None,
+    prometheus_url: str | None = None,
+    loki_url: str | None = None,
+) -> MonitoringMCPServer:
+    """Create a MonitoringMCPServer instance with optional custom URLs.
+
+    Args:
+        grafana_url: Custom Grafana URL override
+        prometheus_url: Custom Prometheus URL override
+        loki_url: Custom Loki URL override
+
+    Returns:
+        Configured MonitoringMCPServer instance.
+    """
+    kwargs: dict[str, str | None] = {}
+    if grafana_url is not None:
+        kwargs["grafana_url"] = grafana_url
+    if prometheus_url is not None:
+        kwargs["prometheus_url"] = prometheus_url
+    if loki_url is not None:
+        kwargs["loki_url"] = loki_url
+    config = MonitoringConfig(**kwargs)
+    return MonitoringMCPServer(config)
 
 
 def run() -> None:
