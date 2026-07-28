@@ -1,29 +1,34 @@
 # monitoring-mcp
-> *A comprehensive FastMCP 2.14.3-powered monitoring server providing intelligent operations across Grafana, Prometheus, and Loki ecosystems with conversational AI assistance for DevOps workflows.* - ✅ ...
 
-This project includes automated llms.txt generation for AI accessibility.
+> FastMCP 3.4.4+ MCP server for Grafana, Prometheus, Loki, and Alertmanager — query, correlate, and manage observability via portmanteau tools.
 
 ## Docs
-- [Readme](README.md): [![CI](https://github.com/sandraschi/monitoring-mcp/actions/workflows/ci.yml/badge.svg)](https://git...
-- [Grafana Integration](docs\monitoring-tools\grafana-integration.md): This guide covers the comprehensive Grafana integration capabilities of the Monitoring MCP server.
-- [Contributing](CONTRIBUTING.md): Thank you for your interest in contributing to the Monitoring MCP Server! This document provides gui...
-- [Changelog](CHANGELOG.md): All notable changes to the Monitoring MCP will be documented in this file.
-- [Code Of Conduct](CODE_OF_CONDUCT.md): We as members, contributors, and leaders pledge to make participation in our community a harassment-...
-- [Prd](PRD.md): The Monitoring MCP is a comprehensive FastMCP 2.14.3-powered server that provides intelligent operat...
 
-## Api
-- [  Init  ](src\monitoring_mcp\models\__init__.py): Models definitions and implementations
-- [Common](src\monitoring_mcp\models\common.py): Models definitions and implementations
+- [README](README.md) — overview, features, compose
+- [INSTALL](INSTALL.md) — just / uv / MCPB / containers
+- [Configuration](docs/CONFIGURATION.md) — `MONITORING_MCP_*` env vars
+- [Tools](docs/TOOLS.md) — all portmanteau operations (implemented)
+- [Podman](docs/PODMAN.md) — Podman Compose and host gateway URLs
+- [Development](docs/DEVELOPMENT.md) — tests, architecture, standards
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [Changelog](CHANGELOG.md)
+- [PRD](PRD.md)
 
-## Examples
-- [Examples](examples/): Example code and implementations
+## Tools
 
-## Configuration
-- [Pyproject](pyproject.toml): Python project configuration and dependencies
-- [Package](web_sota\package.json): Node.js project configuration and dependencies
-- [Config](.git\config): Application configuration files
+- `grafana_management` — dashboards, panels, folders, datasources, alerts, export/import
+- `prometheus_monitoring` — PromQL, targets, rules, silences (Alertmanager), Grafana alert CRUD
+- `loki_logging` — LogQL, WebSocket tail, export, compare, ruler
+- `cross_system_correlation` — incident, root cause, bottlenecks, dependencies
+- `monitoring_status` — health, connectivity, storage, security, capacity
+
+## Config
+
+- Prefix: `MONITORING_MCP_`
+- Endpoints: `GRAFANA_URL`, `PROMETHEUS_URL`, `LOKI_URL`, `ALERTMANAGER_URL`
+- Transport: `MCP_TRANSPORT` = `stdio` | `http` | `sse`
 
 ## Optional
-- [Changelog](CHANGELOG.md): Project changelog information
-- [Contributing](CONTRIBUTING.md): Project contributing information
-- [License](LICENSE): Project license information
+
+- [Contributing](CONTRIBUTING.md)
+- [License](LICENSE)

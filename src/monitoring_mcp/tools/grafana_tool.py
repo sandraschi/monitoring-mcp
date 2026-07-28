@@ -3,11 +3,11 @@ Grafana Management Portmanteau Tool
 
 Comprehensive Grafana operations including dashboard management,
 panel creation, data source queries, and visualization assistance.
-
-PORTMANTEAU PATTERN: Consolidates all Grafana operations into a single tool
-to avoid tool explosion while maintaining full functionality.
 """
 
+from __future__ import annotations
+
+import asyncio
 import logging
 from typing import Any, Literal
 
@@ -15,10 +15,10 @@ import httpx
 from fastmcp import FastMCP
 
 from monitoring_mcp.config import MonitoringConfig
+from monitoring_mcp.utils import ResponseCache
 
 logger = logging.getLogger(__name__)
 
-# Grafana operations supported by this portmanteau tool
 GRAFANA_OPERATIONS = {
     "list_dashboards": "List all dashboards with metadata and tags",
     "get_dashboard": "Retrieve specific dashboard by UID or title",
@@ -41,13 +41,17 @@ GRAFANA_OPERATIONS = {
 
 
 class GrafanaClient:
-    """Grafana API client with authentication and error handling."""
+    """Grafana API client with auth, cache, and grafana-api enrichment."""
 
     def __init__(self, config: MonitoringConfig):
         self.config = config
         self.base_url = config.grafana_url.rstrip("/")
         self.auth_headers = config.get_grafana_auth() or {}
         self.timeout = config.request_timeout
+        self.cache = ResponseCache(
+            ttl_seconds=config.cache_ttl_seconds,
+            enabled=config.enable_cache,
+        )
 
     async def _make_request(
         self,
@@ -55,9 +59,15 @@ class GrafanaClient:
         endpoint: str,
         data: dict[str, Any] | None = None,
         params: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        """Make authenticated request to Grafana API."""
+        *,
+        use_cache: bool = False,
+    ) -> Any:
         url = f"{self.base_url}/api/{endpoint.lstrip('/')}"
+        cache_key = ("grafana", method, endpoint, params, data)
+        if use_cache and method == "GET":
+            cached = self.cache.get(*cache_key)
+            if cached is not None:
+                return cached
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             response = await client.request(
@@ -67,52 +77,96 @@ class GrafanaClient:
                 json=data,
                 params=params,
             )
-
             if response.status_code >= 400:
                 error_msg = f"Grafana API error {response.status_code}: {response.text}"
                 logger.error(error_msg)
                 raise httpx.HTTPStatusError(error_msg, request=response.request, response=response)
+            if response.status_code == 204 or not response.content:
+                return {"status": "ok"}
+            payload = response.json()
+            if use_cache and method == "GET":
+                self.cache.set(*cache_key, value=payload)
+            return payload
 
-            return response.json()
+    def sync_health(self) -> dict[str, Any]:
+        """Wire grafana-api package for health/org enrichment (sync)."""
+        try:
+            from grafana_api.grafana_face import GrafanaFace
+
+            api_key = None
+            if self.config.grafana_api_key:
+                api_key = self.config.grafana_api_key.get_secret_value()
+            auth: Any = api_key
+            if not auth and self.config.grafana_username and self.config.grafana_password:
+                auth = (self.config.grafana_username, self.config.grafana_password.get_secret_value())
+            parsed_host = self.base_url.split("://", 1)[-1].split("/")[0]
+            face = GrafanaFace(
+                auth=auth,
+                host=parsed_host,
+                protocol="https" if self.base_url.startswith("https") else "http",
+            )
+            org = face.organization.get_current_organization()
+            return {"organization": org}
+        except Exception as exc:
+            logger.debug("grafana-api enrichment unavailable: %s", exc)
+            return {"error": str(exc), "note": "grafana-api enrichment unavailable"}
 
     async def list_dashboards(self) -> list[dict[str, Any]]:
-        """List all dashboards."""
-        return await self._make_request("GET", "search?type=dash-db")
+        return await self._make_request("GET", "search", params={"type": "dash-db"}, use_cache=True)
 
     async def get_dashboard(self, uid: str) -> dict[str, Any]:
-        """Get dashboard by UID."""
         return await self._make_request("GET", f"dashboards/uid/{uid}")
 
     async def create_dashboard(self, dashboard: dict[str, Any], folder_id: int | None = None) -> dict[str, Any]:
-        """Create new dashboard."""
-        data = {"dashboard": dashboard}
+        data: dict[str, Any] = {"dashboard": dashboard, "overwrite": False}
         if folder_id is not None:
             data["folderId"] = folder_id
         return await self._make_request("POST", "dashboards/db", data)
 
     async def update_dashboard(self, dashboard: dict[str, Any], uid: str, overwrite: bool = True) -> dict[str, Any]:
-        """Update existing dashboard."""
-        data = {"dashboard": dashboard, "overwrite": overwrite}
-        return await self._make_request("POST", "dashboards/db", data)
+        dashboard = {**dashboard, "uid": uid}
+        return await self._make_request("POST", "dashboards/db", {"dashboard": dashboard, "overwrite": overwrite})
 
     async def delete_dashboard(self, uid: str) -> dict[str, Any]:
-        """Delete dashboard by UID."""
         return await self._make_request("DELETE", f"dashboards/uid/{uid}")
 
     async def list_datasources(self) -> list[dict[str, Any]]:
-        """List all data sources."""
-        return await self._make_request("GET", "datasources")
+        return await self._make_request("GET", "datasources", use_cache=True)
 
     async def query_datasource(
         self, datasource_id: int, queries: list[dict[str, Any]], time_range: dict[str, str]
     ) -> dict[str, Any]:
-        """Query data source."""
         data = {
             "queries": queries,
             "from": time_range.get("from", "now-1h"),
             "to": time_range.get("to", "now"),
         }
         return await self._make_request("POST", f"ds/query?dsid={datasource_id}", data)
+
+    async def list_folders(self) -> list[dict[str, Any]]:
+        return await self._make_request("GET", "folders", use_cache=True)
+
+    async def create_folder(self, title: str, uid: str | None = None) -> dict[str, Any]:
+        body: dict[str, Any] = {"title": title}
+        if uid:
+            body["uid"] = uid
+        return await self._make_request("POST", "folders", body)
+
+    async def get_dashboard_permissions(self, uid: str) -> list[dict[str, Any]]:
+        return await self._make_request("GET", f"dashboards/uid/{uid}/permissions")
+
+    async def import_dashboard(self, dashboard: dict[str, Any], folder_id: int | None = None) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "dashboard": dashboard.get("dashboard", dashboard),
+            "overwrite": True,
+            "inputs": dashboard.get("inputs", []),
+        }
+        if folder_id is not None:
+            payload["folderId"] = folder_id
+        return await self._make_request("POST", "dashboards/import", payload)
+
+    async def create_alert_rule(self, alert_rule: dict[str, Any]) -> dict[str, Any]:
+        return await self._make_request("POST", "v1/provisioning/alert-rules", alert_rule)
 
 
 def register_grafana_tool(
@@ -148,321 +202,255 @@ def register_grafana_tool(
         dashboard_uid: str | None = None,
         dashboard_title: str | None = None,
         dashboard_data: dict[str, Any] | None = None,
-        folder_id: int | None = None,
         search_query: str | None = None,
+        folder_id: int | None = None,
         datasource_id: int | None = None,
         queries: list[dict[str, Any]] | None = None,
         time_range: dict[str, str] | None = None,
         panel_data: dict[str, Any] | None = None,
+        panel_id: int | None = None,
         alert_rule: dict[str, Any] | None = None,
         folder_name: str | None = None,
-        permissions_data: dict[str, Any] | None = None,
+        folder_uid: str | None = None,
     ) -> dict[str, Any]:
-        """
-        Comprehensive Grafana management portmanteau tool leveraging FastMCP 2.14.3.
-
-        PORTMANTEAU PATTERN: Consolidates 17 Grafana operations into a single tool
-        to prevent tool explosion while maintaining comprehensive functionality.
-
-        Provides conversational responses with actionable insights and AI-powered
-        analysis for dashboard optimization and monitoring best practices.
-
-        Args:
-            operation: The Grafana operation to perform
-            dashboard_uid: Dashboard UID for operations requiring specific dashboard
-            dashboard_title: Dashboard title for search/create operations
-            dashboard_data: Dashboard JSON data for create/update operations
-            folder_id: Folder ID for organizing dashboards
-            search_query: Query string for dashboard/folder search
-            datasource_id: Data source ID for query operations
-            queries: Query objects for data source queries
-            time_range: Time range specification for queries
-            panel_data: Panel configuration for panel operations
-            alert_rule: Alert rule configuration
-            folder_name: Folder name for folder operations
-            permissions_data: Permissions configuration
-
-        Returns:
-            Dict containing operation results with conversational summary and insights
-        """
+        """Comprehensive Grafana management portmanteau tool."""
         try:
             if operation not in GRAFANA_OPERATIONS:
                 return {
                     "success": False,
-                    "error": f"Invalid operation '{operation}'. Available: {list(GRAFANA_OPERATIONS.keys())}",
-                    "conversational_summary": f"I don't recognize the '{operation}' operation. Here are the available Grafana operations I can help with.",
+                    "error": f"Invalid operation '{operation}'",
                     "available_operations": list(GRAFANA_OPERATIONS.keys()),
                 }
 
-            logger.info(f"Executing Grafana operation: {operation}")
-
-            # Execute the requested operation
             result = await _execute_grafana_operation(
                 client,
                 operation,
-                dashboard_uid,
-                dashboard_title,
-                dashboard_data,
-                folder_id,
-                search_query,
-                datasource_id,
-                queries,
-                time_range,
-                panel_data,
-                alert_rule,
-                folder_name,
-                permissions_data,
+                dashboard_uid=dashboard_uid,
+                dashboard_title=dashboard_title,
+                dashboard_data=dashboard_data,
+                search_query=search_query,
+                folder_id=folder_id,
+                datasource_id=datasource_id,
+                queries=queries,
+                time_range=time_range,
+                panel_data=panel_data,
+                panel_id=panel_id,
+                alert_rule=alert_rule,
+                folder_name=folder_name,
+                folder_uid=folder_uid,
             )
-
-            # Add conversational insights
             result["conversational_summary"] = _generate_conversational_summary(operation, result)
-
-            # Add AI-powered recommendations where appropriate
-            if operation in ["analyze_dashboard", "get_dashboard", "list_dashboards"]:
+            if operation in ["analyze_dashboard", "list_dashboards"]:
                 result["ai_insights"] = _generate_ai_insights(operation, result)
-
             return result
-
         except Exception as e:
-            logger.error(f"Error in Grafana operation '{operation}': {e}", exc_info=True)
+            logger.error("Error in Grafana operation '%s': %s", operation, e, exc_info=True)
             return {
                 "success": False,
-                "error": f"Failed to execute Grafana operation '{operation}': {e!s}",
-                "conversational_summary": f"I encountered an error while trying to {operation.replace('_', ' ')}. This might be due to connectivity issues or invalid parameters. Please check your Grafana configuration and try again.",
-                "troubleshooting_tips": [
-                    "Verify Grafana is running and accessible",
-                    "Check API key/authentication settings",
-                    "Ensure dashboard UID/title exists",
-                    "Validate JSON structure for dashboard operations",
-                ],
+                "error": str(e),
+                "conversational_summary": (
+                    f"Failed to {operation.replace('_', ' ')}. "
+                    "Check Grafana URL and credentials."
+                ),
             }
 
 
 async def _execute_grafana_operation(
     client: GrafanaClient,
     operation: str,
+    *,
     dashboard_uid: str | None = None,
     dashboard_title: str | None = None,
     dashboard_data: dict[str, Any] | None = None,
-    folder_id: int | None = None,
     search_query: str | None = None,
+    folder_id: int | None = None,
     datasource_id: int | None = None,
     queries: list[dict[str, Any]] | None = None,
     time_range: dict[str, str] | None = None,
     panel_data: dict[str, Any] | None = None,
+    panel_id: int | None = None,
     alert_rule: dict[str, Any] | None = None,
     folder_name: str | None = None,
-    permissions_data: dict[str, Any] | None = None,
+    folder_uid: str | None = None,
 ) -> dict[str, Any]:
-    """Execute the specific Grafana operation."""
-
     if operation == "list_dashboards":
         dashboards = await client.list_dashboards()
-        return {
-            "success": True,
-            "operation": "list_dashboards",
-            "data": dashboards,
-            "count": len(dashboards),
-        }
+        return {"success": True, "operation": operation, "data": dashboards, "count": len(dashboards)}
 
-    elif operation == "get_dashboard":
+    if operation == "get_dashboard":
         if not dashboard_uid:
             raise ValueError("dashboard_uid is required for get_dashboard")
         dashboard = await client.get_dashboard(dashboard_uid)
-        return {
-            "success": True,
-            "operation": "get_dashboard",
-            "data": dashboard,
-        }
+        return {"success": True, "operation": operation, "data": dashboard}
 
-    elif operation == "create_dashboard":
+    if operation == "create_dashboard":
         if not dashboard_data:
             raise ValueError("dashboard_data is required for create_dashboard")
         result = await client.create_dashboard(dashboard_data, folder_id)
-        return {
-            "success": True,
-            "operation": "create_dashboard",
-            "data": result,
-        }
+        return {"success": True, "operation": operation, "data": result}
 
-    elif operation == "update_dashboard":
+    if operation == "update_dashboard":
         if not dashboard_data or not dashboard_uid:
             raise ValueError("dashboard_data and dashboard_uid are required for update_dashboard")
         result = await client.update_dashboard(dashboard_data, dashboard_uid)
-        return {
-            "success": True,
-            "operation": "update_dashboard",
-            "data": result,
-        }
+        return {"success": True, "operation": operation, "data": result}
 
-    elif operation == "delete_dashboard":
+    if operation == "delete_dashboard":
         if not dashboard_uid:
             raise ValueError("dashboard_uid is required for delete_dashboard")
         result = await client.delete_dashboard(dashboard_uid)
-        return {
-            "success": True,
-            "operation": "delete_dashboard",
-            "data": result,
-        }
+        return {"success": True, "operation": operation, "data": result}
 
-    elif operation == "search_dashboards":
+    if operation == "search_dashboards":
         dashboards = await client.list_dashboards()
         if search_query:
-            # Simple text search in titles and tags
-            filtered = []
-            query_lower = search_query.lower()
-            for db in dashboards:
-                title = db.get("title", "").lower()
-                tags = [tag.lower() for tag in db.get("tags", [])]
-                if query_lower in title or any(query_lower in tag for tag in tags):
-                    filtered.append(db)
-            dashboards = filtered
+            q = search_query.lower()
+            dashboards = [
+                db
+                for db in dashboards
+                if q in db.get("title", "").lower() or any(q in t.lower() for t in db.get("tags", []))
+            ]
         return {
             "success": True,
-            "operation": "search_dashboards",
+            "operation": operation,
             "data": dashboards,
             "count": len(dashboards),
             "search_query": search_query,
         }
 
-    elif operation == "list_datasources":
+    if operation == "list_datasources":
         datasources = await client.list_datasources()
-        return {
-            "success": True,
-            "operation": "list_datasources",
-            "data": datasources,
-            "count": len(datasources),
-        }
+        return {"success": True, "operation": operation, "data": datasources, "count": len(datasources)}
 
-    elif operation == "query_datasource":
+    if operation == "query_datasource":
         if not datasource_id or not queries:
             raise ValueError("datasource_id and queries are required for query_datasource")
         time_range = time_range or {"from": "now-1h", "to": "now"}
         result = await client.query_datasource(datasource_id, queries, time_range)
         return {
             "success": True,
-            "operation": "query_datasource",
+            "operation": operation,
             "data": result,
             "datasource_id": datasource_id,
             "query_count": len(queries),
         }
 
-    # Placeholder implementations for remaining operations
-    elif operation in [
-        "create_panel",
-        "update_panel",
-        "create_alert",
-        "export_dashboard",
-        "import_dashboard",
-        "list_folders",
-        "create_folder",
-        "get_dashboard_permissions",
-    ]:
+    if operation == "export_dashboard":
+        if not dashboard_uid:
+            raise ValueError("dashboard_uid is required for export_dashboard")
+        dashboard = await client.get_dashboard(dashboard_uid)
         return {
-            "success": False,
+            "success": True,
             "operation": operation,
-            "error": f"Operation '{operation}' is not yet implemented",
-            "note": "This operation is planned for a future version",
+            "data": dashboard,
+            "export": dashboard.get("dashboard"),
+            "meta": dashboard.get("meta"),
         }
 
-    elif operation == "analyze_dashboard":
+    if operation == "import_dashboard":
+        if not dashboard_data:
+            raise ValueError("dashboard_data is required for import_dashboard")
+        result = await client.import_dashboard(dashboard_data, folder_id)
+        return {"success": True, "operation": operation, "data": result}
+
+    if operation == "list_folders":
+        folders = await client.list_folders()
+        return {"success": True, "operation": operation, "data": folders, "count": len(folders)}
+
+    if operation == "create_folder":
+        title = folder_name or dashboard_title
+        if not title:
+            raise ValueError("folder_name is required for create_folder")
+        result = await client.create_folder(title, folder_uid)
+        return {"success": True, "operation": operation, "data": result}
+
+    if operation == "get_dashboard_permissions":
+        if not dashboard_uid:
+            raise ValueError("dashboard_uid is required for get_dashboard_permissions")
+        perms = await client.get_dashboard_permissions(dashboard_uid)
+        return {"success": True, "operation": operation, "data": perms, "count": len(perms)}
+
+    if operation == "create_panel":
+        if not dashboard_uid or not panel_data:
+            raise ValueError("dashboard_uid and panel_data are required for create_panel")
+        full = await client.get_dashboard(dashboard_uid)
+        dashboard = full.get("dashboard", {})
+        panels = list(dashboard.get("panels") or [])
+        next_id = max((p.get("id", 0) for p in panels), default=0) + 1
+        new_panel = {"id": next_id, "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}, **panel_data}
+        panels.append(new_panel)
+        dashboard["panels"] = panels
+        saved = await client.update_dashboard(dashboard, dashboard_uid)
+        return {"success": True, "operation": operation, "data": saved, "panel_id": next_id}
+
+    if operation == "update_panel":
+        if not dashboard_uid or panel_id is None or not panel_data:
+            raise ValueError("dashboard_uid, panel_id, and panel_data are required for update_panel")
+        full = await client.get_dashboard(dashboard_uid)
+        dashboard = full.get("dashboard", {})
+        panels = list(dashboard.get("panels") or [])
+        found = False
+        for i, panel in enumerate(panels):
+            if panel.get("id") == panel_id:
+                panels[i] = {**panel, **panel_data, "id": panel_id}
+                found = True
+                break
+        if not found:
+            raise ValueError(f"Panel id {panel_id} not found on dashboard {dashboard_uid}")
+        dashboard["panels"] = panels
+        saved = await client.update_dashboard(dashboard, dashboard_uid)
+        return {"success": True, "operation": operation, "data": saved, "panel_id": panel_id}
+
+    if operation == "create_alert":
+        if not alert_rule:
+            raise ValueError("alert_rule is required for create_alert")
+        created = await client.create_alert_rule(alert_rule)
+        return {"success": True, "operation": operation, "data": created}
+
+    if operation == "analyze_dashboard":
         if not dashboard_uid:
             raise ValueError("dashboard_uid is required for analyze_dashboard")
         dashboard = await client.get_dashboard(dashboard_uid)
-        # Basic analysis - could be enhanced with AI
         analysis = _analyze_dashboard_structure(dashboard)
-        return {
-            "success": True,
-            "operation": "analyze_dashboard",
-            "data": dashboard,
-            "analysis": analysis,
-        }
+        org_info = await asyncio.to_thread(client.sync_health)
+        analysis["grafana_org"] = org_info
+        return {"success": True, "operation": operation, "data": dashboard, "analysis": analysis}
 
-    else:
-        raise ValueError(f"Unsupported operation: {operation}")
+    raise ValueError(f"Unsupported operation: {operation}")
 
 
 def _generate_conversational_summary(operation: str, result: dict[str, Any]) -> str:
-    """Generate conversational summary for the operation result."""
     if not result.get("success"):
-        return f"I wasn't able to complete the {operation.replace('_', ' ')} operation. {result.get('error', 'Unknown error occurred')}."
-
+        return f"I wasn't able to complete the {operation.replace('_', ' ')} operation. {result.get('error', '')}"
     if operation == "list_dashboards":
-        count = result.get("count", 0)
-        return f"I found {count} dashboard{'s' if count != 1 else ''} in your Grafana instance. {'You have quite a comprehensive monitoring setup!' if count > 10 else 'This gives you a good foundation for monitoring.'}"
-
-    elif operation == "get_dashboard":
-        dashboard = result.get("data", {}).get("dashboard", {})
-        title = dashboard.get("title", "Unknown")
-        panels = len(dashboard.get("panels", []))
-        return f"I retrieved the '{title}' dashboard. It contains {panels} panel{'s' if panels != 1 else ''} for visualizing your metrics."
-
-    elif operation == "create_dashboard":
-        uid = result.get("data", {}).get("uid", "unknown")
-        return f"Successfully created a new dashboard with UID '{uid}'. You can now access it in Grafana to start adding panels and queries."
-
-    elif operation == "search_dashboards":
-        count = result.get("count", 0)
-        query = result.get("search_query", "")
-        return f"I found {count} dashboard{'s' if count != 1 else ''} matching '{query}'. {'Here are your search results:' if count > 0 else 'No dashboards matched your search criteria.'}"
-
-    elif operation == "list_datasources":
-        count = result.get("count", 0)
-        return f"Your Grafana instance has {count} configured data source{'s' if count != 1 else ''}. This gives you {'excellent' if count > 3 else 'basic'} data connectivity."
-
-    elif operation == "query_datasource":
-        return f"I executed {result.get('query_count', 0)} quer{'ies' if result.get('query_count', 0) != 1 else 'y'} against data source {result.get('datasource_id')}. The results are ready for analysis."
-
-    elif operation == "analyze_dashboard":
-        analysis = result.get("analysis", {})
-        score = analysis.get("overall_score", 0)
-        return f"I analyzed your dashboard and gave it an overall score of {score}/10. {analysis.get('summary', 'Review the detailed analysis for improvement suggestions.')}"
-
-    else:
-        return f"The {operation.replace('_', ' ')} operation completed successfully."
+        return f"Found {result.get('count', 0)} dashboards."
+    if operation == "list_folders":
+        return f"Found {result.get('count', 0)} folders."
+    if operation == "export_dashboard":
+        return "Dashboard exported as JSON."
+    if operation == "create_panel":
+        return f"Added panel id {result.get('panel_id')} to the dashboard."
+    return f"The {operation.replace('_', ' ')} operation completed successfully."
 
 
 def _generate_ai_insights(operation: str, result: dict[str, Any]) -> dict[str, Any]:
-    """Generate AI-powered insights for dashboard analysis."""
-    insights = {"recommendations": [], "optimization_opportunities": []}
-
+    insights: dict[str, list[str]] = {"recommendations": [], "optimization_opportunities": []}
     if operation == "analyze_dashboard":
         analysis = result.get("analysis", {})
-
         if analysis.get("panel_count", 0) > 20:
-            insights["recommendations"].append(
-                "Consider breaking this dashboard into multiple focused dashboards for better organization"
-            )
-
-        if not analysis.get("has_alerts", False):
-            insights["optimization_opportunities"].append(
-                "Add alerting rules to critical panels to get notified of issues proactively"
-            )
-
-        if analysis.get("unused_variables", []):
-            insights["optimization_opportunities"].append(
-                f"Remove unused template variables: {', '.join(analysis['unused_variables'])}"
-            )
-
-    elif operation == "list_dashboards":
-        dashboards = result.get("data", [])
-        if len(dashboards) > 50:
-            insights["recommendations"].append("Consider organizing dashboards into folders for better navigation")
-
-        # Check for dashboards without recent updates
-        # (Would need timestamp data from Grafana)
-
+            insights["recommendations"].append("Split into focused dashboards for clarity")
+        if not analysis.get("has_alerts"):
+            insights["optimization_opportunities"].append("Add alerting on critical panels")
+    elif operation == "list_dashboards" and result.get("count", 0) > 50:
+        insights["recommendations"].append("Organize dashboards into folders")
     return insights
 
 
 def _analyze_dashboard_structure(dashboard_data: dict[str, Any]) -> dict[str, Any]:
-    """Analyze dashboard structure and provide insights."""
     dashboard = dashboard_data.get("dashboard", {})
     meta = dashboard_data.get("meta", {})
-
     panels = dashboard.get("panels", [])
     templating = dashboard.get("templating", {}).get("list", [])
-
     analysis = {
         "panel_count": len(panels),
         "template_variables": len(templating),
@@ -471,25 +459,21 @@ def _analyze_dashboard_structure(dashboard_data: dict[str, Any]) -> dict[str, An
         "refresh_interval": dashboard.get("refresh"),
         "time_range": dashboard.get("time", {}),
         "permissions": meta.get("permissions", []),
-        "unused_variables": [],  # Would need more complex analysis
-        "overall_score": 7,  # Placeholder scoring
-        "summary": "This dashboard has a good structure with multiple panels and appropriate configuration.",
+        "unused_variables": [],
+        "overall_score": 5,
+        "summary": "Dashboard structure analyzed.",
     }
-
-    # Basic scoring logic
-    score = 5  # Base score
-
-    if len(panels) > 0:
+    score = 5
+    if panels:
         score += 1
-    if len(templating) > 0:
+    if templating:
         score += 1
     if analysis["has_alerts"]:
         score += 1
-    if len(analysis["tags"]) > 0:
+    if analysis["tags"]:
         score += 1
     if analysis["refresh_interval"]:
         score += 1
-
     analysis["overall_score"] = min(score, 10)
-
+    analysis["summary"] = f"Score {analysis['overall_score']}/10 with {len(panels)} panels."
     return analysis

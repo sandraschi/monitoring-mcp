@@ -2,7 +2,7 @@
 """
 Monitoring MCP Server - Command Line Interface
 
-Entry point for running the Monitoring MCP server with FastMCP 2.14.3.
+Entry point for running the Monitoring MCP server with FastMCP 3.4+.
 
 This module provides the command-line interface for starting the monitoring MCP server,
 which provides intelligent operations across Grafana, Prometheus, and Loki ecosystems.

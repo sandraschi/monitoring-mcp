@@ -1,0 +1,14 @@
+{
+    "product_name": "Monitoring MCP",
+    "install_dir": "%LOCALAPPDATA%\\Monitoring MCP",
+    "operator_exe": "monitoring-mcp-native.exe",
+    "backend_process_names": ["monitoring-mcp-native", "monitoring-mcp-backend"],
+    "backend_port": 10851,
+    "health_path": "/api/v1/health",
+    "diagnostics_path": "/api/v1/diagnostics",
+    "feature_smoke_path": "/api/v1/system/info",
+    "window_title_re": "Monitoring MCP",
+    "nsis_glob": "native/target/release/bundle/nsis/Monitoring MCP_*_x64-setup.exe",
+    "bridge_ok_text": "REST bridge reachable",
+    "uninstall_registry_filter": "*Monitoring MCP*"
+}

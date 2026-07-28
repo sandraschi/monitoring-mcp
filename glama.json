@@ -1,0 +1,14 @@
+{
+  "$schema": "https://glama.ai/mcp/schema/2026",
+  "name": "monitoring-mcp",
+  "description": "FastMCP-powered monitoring server for Grafana, Prometheus, and Loki ecosystems",
+  "version": "0.1.0",
+  "author": "Sandra Schi",
+  "homepage": "https://github.com/sandraschi/monitoring-mcp",
+  "repository": "https://github.com/sandraschi/monitoring-mcp",
+  "categories": ["monitoring", "observability", "devops"],
+  "tags": ["grafana", "prometheus", "loki", "mcp", "fastmcp"],
+  "api": {
+    "url": "https://raw.githubusercontent.com/sandraschi/monitoring-mcp/main/llms-full.txt"
+  }
+}

@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-The Monitoring MCP is a comprehensive FastMCP 2.14.3-powered server that provides intelligent operations across Grafana, Prometheus, and Loki ecosystems. It enables AI assistants to perform sophisticated monitoring tasks with conversational responses, intelligent sampling, and cross-system correlation analysis.
+The Monitoring MCP is a comprehensive FastMCP 3.4+-powered server that provides intelligent operations across Grafana, Prometheus, and Loki ecosystems. It enables AI assistants to perform sophisticated monitoring tasks with conversational responses, intelligent sampling, and cross-system correlation analysis.
 
 ## Product Vision
 
@@ -105,9 +105,10 @@ The Monitoring MCP is a comprehensive FastMCP 2.14.3-powered server that provide
 - Grafana: API v9.0+
 - Prometheus: API v1
 - Loki: API v1
-- Python: 3.10+
-- FastMCP: 2.14.3+
-
+- Python: 3.12+
+- FastMCP: 3.4.4+
+- Containers: Docker Compose or Podman Compose (see docs/PODMAN.md)
+- Alertmanager: optional (silences)
 ## Technical Architecture
 
 ### System Architecture
@@ -150,7 +151,7 @@ The Monitoring MCP is a comprehensive FastMCP 2.14.3-powered server that provide
 #### Core Components
 
 1. **MCP Server** (`MonitoringMCPServer`)
-   - FastMCP 2.14.3 integration
+   - FastMCP 3.4.4+ integration
    - Portmanteau tool registration
    - Configuration management
    - Error handling and logging
@@ -206,7 +207,7 @@ The Monitoring MCP is a comprehensive FastMCP 2.14.3-powered server that provide
 ## Implementation Plan
 
 ### Phase 1: Core Infrastructure (Week 1-2)
-- [x] Project scaffolding with FastMCP 2.14.3
+- [x] Project scaffolding with FastMCP 3.4.4+
 - [x] Basic MCP server implementation
 - [x] Configuration management with Pydantic
 - [x] Persistent storage setup
@@ -286,7 +287,7 @@ The Monitoring MCP is a comprehensive FastMCP 2.14.3-powered server that provide
 ## Dependencies
 
 ### External Dependencies
-- **FastMCP 2.14.3+**: Core MCP framework
+- **FastMCP 3.4.4+**: Core MCP framework
 - **Grafana API**: Dashboard and query operations
 - **Prometheus API**: Metrics and alerting
 - **Loki API**: Log querying and analysis
@@ -375,7 +376,7 @@ The Monitoring MCP is a comprehensive FastMCP 2.14.3-powered server that provide
 
 ## Conclusion
 
-The Monitoring MCP represents a significant advancement in AI-powered DevOps workflows by providing intelligent, conversational access to comprehensive monitoring data. By leveraging FastMCP 2.14.3's advanced capabilities and implementing a portmanteau tool design, the system offers unparalleled insights into system health and performance.
+The Monitoring MCP represents a significant advancement in AI-powered DevOps workflows by providing intelligent, conversational access to comprehensive monitoring data. By leveraging FastMCP 3.4.4+'s advanced capabilities and implementing a portmanteau tool design, the system offers unparalleled insights into system health and performance.
 
 The modular architecture ensures maintainability while the focus on conversational AI responses makes complex monitoring tasks accessible to both technical and non-technical users. The cross-system correlation capabilities provide unique value by enabling automated root cause analysis and intelligent incident response.
 

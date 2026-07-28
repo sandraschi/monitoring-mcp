@@ -10,20 +10,16 @@ The Monitoring MCP provides full Grafana API integration through the `grafana_ma
 
 ### API Key Authentication (Recommended)
 
-```bash
-# Set environment variable
-export MONITORING_MCP_GRAFANA_API_KEY="your_grafana_api_key_here"
-
-# Or in .env file
-MONITORING_MCP_GRAFANA_API_KEY=your_grafana_api_key_here
+```powershell
+$env:MONITORING_MCP_GRAFANA_API_KEY = "your_grafana_api_key_here"
+# Or set in .env: MONITORING_MCP_GRAFANA_API_KEY=...
 ```
 
 ### Username/Password Authentication
 
-```bash
-# Set environment variables
-export MONITORING_MCP_GRAFANA_USERNAME="admin"
-export MONITORING_MCP_GRAFANA_PASSWORD="your_password_here"
+```powershell
+$env:MONITORING_MCP_GRAFANA_USERNAME = "admin"
+$env:MONITORING_MCP_GRAFANA_PASSWORD = "your_password_here"
 ```
 
 ## Dashboard Management
@@ -134,7 +130,7 @@ print(f"Result count: {len(result['data']['results'])}")
 ### Adding Panels to Dashboards
 
 ```python
-# Add a new panel (placeholder for future implementation)
+# Add a new panel to an existing dashboard
 result = await grafana_management(
     operation="create_panel",
     dashboard_uid="your_dashboard_uid",
@@ -150,7 +146,6 @@ result = await grafana_management(
     }
 )
 
-# Note: Panel operations are planned for future versions
 print(result["conversational_summary"])
 ```
 
@@ -159,25 +154,14 @@ print(result["conversational_summary"])
 ### Creating Alert Rules
 
 ```python
-# Create alert rules (placeholder for future implementation)
+# Create alert via Grafana unified alerting provisioning API
 alert_rule = {
-    "name": "High Error Rate",
-    "condition": "C",
-    "noDataState": "NoValue",
-    "executionErrorState": "Alerting",
+    "title": "High Error Rate",
+    "condition": "A",
+    "noDataState": "NoData",
+    "execErrState": "Error",
     "for": "5m",
-    "frequency": "1m",
-    "handler": 1,
-    "rules": [
-        {
-            "expr": "rate(http_requests_total{status=~'5..'}[$__rate_interval]) > 0.1",
-            "labels": {"severity": "warning"},
-            "annotations": {
-                "summary": "High error rate detected",
-                "description": "Error rate is {{ $value }} which is above the threshold"
-            }
-        }
-    ]
+    "data": [],
 }
 
 result = await grafana_management(

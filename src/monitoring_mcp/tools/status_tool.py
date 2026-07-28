@@ -170,6 +170,10 @@ async def _execute_status_operation(
         "performance_metrics": (_check_performance_metrics, _format_performance_result),
         "data_flow_status": (_check_data_flow, _format_data_flow_result),
         "alert_status": (_check_alert_status, _format_alert_status_result),
+        "storage_status": (_check_storage_status, _format_generic_status_result),
+        "backup_status": (_check_backup_status, _format_generic_status_result),
+        "security_status": (_check_security_status, _format_generic_status_result),
+        "capacity_planning": (_check_capacity_planning, _format_generic_status_result),
     }
 
     if operation in operation_handlers:
@@ -185,17 +189,11 @@ async def _execute_status_operation(
         )
         return formatter(operation, result_data)
 
-    # Placeholder implementations for remaining operations
-    elif operation in ["storage_status", "backup_status", "security_status", "capacity_planning"]:
-        return {
-            "success": False,
-            "operation": operation,
-            "error": f"Operation '{operation}' is not yet implemented",
-            "note": "This operation is planned for a future version",
-        }
+    raise ValueError(f"Unsupported operation: {operation}")
 
-    else:
-        raise ValueError(f"Unsupported operation: {operation}")
+
+def _format_generic_status_result(operation: str, data: dict[str, Any]) -> dict[str, Any]:
+    return {"success": True, "operation": operation, **data}
 
 
 def _format_system_health_result(operation: str, health_status: dict[str, Any]) -> dict[str, Any]:
@@ -846,3 +844,157 @@ async def _check_alert_status(
             }
 
     return alert_status
+
+async def _check_storage_status(
+    grafana_client,
+    prometheus_client,
+    loki_client,
+    config,
+    component_filter,
+    detailed_check,
+    include_historical,
+):
+    """Local MCP storage + Prometheus TSDB stats when available."""
+    import shutil
+    from pathlib import Path
+
+    storage_path = Path(config.storage_path)
+    storage_path.mkdir(parents=True, exist_ok=True)
+    usage = shutil.disk_usage(storage_path)
+    local = {
+        "path": str(storage_path.resolve()),
+        "exists": storage_path.exists(),
+        "disk_total_gb": round(usage.total / (1024**3), 2),
+        "disk_used_gb": round(usage.used / (1024**3), 2),
+        "disk_free_gb": round(usage.free / (1024**3), 2),
+        "disk_used_percent": round(usage.used / usage.total * 100, 2) if usage.total else 0,
+    }
+    prometheus_tsdb = {}
+    try:
+        # Prometheus /api/v1/status/tsdb (newer versions)
+        result = await prometheus_client._make_request("status/tsdb")
+        prometheus_tsdb = result.get("data", result)
+    except Exception as exc:
+        prometheus_tsdb = {"available": False, "error": str(exc)}
+    return {
+        "storage": {"local_mcp": local, "prometheus_tsdb": prometheus_tsdb},
+        "overall_status": "ok" if local["disk_used_percent"] < 90 else "warning",
+    }
+
+
+async def _check_backup_status(
+    grafana_client,
+    prometheus_client,
+    loki_client,
+    config,
+    component_filter,
+    detailed_check,
+    include_historical,
+):
+    """Infer retention / backup posture from Prometheus flags and local sealed snapshots."""
+    from monitoring_mcp.utils import seal_payload
+
+    flags = {}
+    try:
+        flags = await prometheus_client.status_flags()
+    except Exception as exc:
+        flags = {"error": str(exc)}
+    retention = None
+    flag_data = flags.get("data", flags) if isinstance(flags, dict) else {}
+    if isinstance(flag_data, dict):
+        retention = flag_data.get("storage.tsdb.retention.time") or flag_data.get(
+            "storage.tsdb.retention"
+        )
+    snapshot_note = seal_payload(
+        {"checked": True, "retention": retention},
+        config.encryption_key or "unset",
+    )
+    return {
+        "backup": {
+            "prometheus_retention": retention,
+            "prometheus_flags": flag_data,
+            "local_integrity_token": snapshot_note[:80] + "...",
+            "recommendation": "Configure remote_write / Grafana backup for durable retention"
+            if not retention
+            else f"Prometheus retention appears set to {retention}",
+        },
+        "overall_status": "ok" if retention else "unknown",
+    }
+
+
+async def _check_security_status(
+    grafana_client,
+    prometheus_client,
+    loki_client,
+    config,
+    component_filter,
+    detailed_check,
+    include_historical,
+):
+    """Check auth posture for configured endpoints."""
+    checks = {
+        "grafana_auth_configured": bool(config.get_grafana_auth()),
+        "prometheus_auth_configured": bool(config.get_prometheus_auth()),
+        "loki_auth_configured": bool(config.get_loki_auth()),
+        "encryption_key_persisted": bool(config.encryption_key),
+        "endpoints_use_https": {
+            "grafana": config.grafana_url.startswith("https://"),
+            "prometheus": config.prometheus_url.startswith("https://"),
+            "loki": config.loki_url.startswith("https://"),
+            "alertmanager": config.alertmanager_url.startswith("https://"),
+        },
+    }
+    score = sum(
+        [
+            checks["grafana_auth_configured"],
+            checks["prometheus_auth_configured"] or config.prometheus_url.startswith("http://localhost"),
+            checks["loki_auth_configured"] or config.loki_url.startswith("http://localhost"),
+            checks["encryption_key_persisted"],
+        ]
+    )
+    return {
+        "security": checks,
+        "security_score": score,
+        "overall_status": "ok" if score >= 3 else "warning",
+        "recommendations": [
+            tip
+            for tip, needed in [
+                ("Set MONITORING_MCP_GRAFANA_API_KEY", not checks["grafana_auth_configured"]),
+                ("Prefer HTTPS for remote endpoints", not all(checks["endpoints_use_https"].values())),
+            ]
+            if needed
+        ],
+    }
+
+
+async def _check_capacity_planning(
+    grafana_client,
+    prometheus_client,
+    loki_client,
+    config,
+    component_filter,
+    detailed_check,
+    include_historical,
+):
+    """Capacity signals from local disk + Prometheus head series if available."""
+    import shutil
+    from pathlib import Path
+
+    usage = shutil.disk_usage(Path(config.storage_path))
+    head_series = None
+    try:
+        result = await prometheus_client.query("prometheus_tsdb_head_series")
+        series = result.get("data", {}).get("result", [])
+        if series:
+            head_series = float(series[0].get("value", [None, 0])[1])
+    except Exception as exc:
+        head_series = f"unavailable: {exc}"
+    free_pct = round(usage.free / usage.total * 100, 2) if usage.total else 0
+    return {
+        "capacity": {
+            "local_disk_free_percent": free_pct,
+            "prometheus_head_series": head_series,
+            "guidance": "Scale TSDB retention or remote_write if head series grows unboundedly",
+        },
+        "overall_status": "ok" if free_pct > 15 else "warning",
+    }

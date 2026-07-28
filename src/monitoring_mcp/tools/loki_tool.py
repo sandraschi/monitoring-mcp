@@ -3,26 +3,28 @@ Loki Logging Portmanteau Tool
 
 Comprehensive Loki operations including log querying, analysis,
 pattern detection, and log-based troubleshooting assistance.
-
-PORTMANTEAU PATTERN: Consolidates all Loki operations into a single tool
-to avoid tool explosion while maintaining full functionality.
 """
 
+from __future__ import annotations
+
+import asyncio
+import json
 import logging
 from typing import Any, Literal
+from urllib.parse import urlencode, urlparse, urlunparse
 
 import httpx
 from fastmcp import FastMCP
 
 from monitoring_mcp.config import MonitoringConfig
+from monitoring_mcp.utils import ResponseCache, sample_list
 
 logger = logging.getLogger(__name__)
 
-# Loki operations supported by this portmanteau tool
 LOKI_OPERATIONS = {
     "query_logs": "Execute LogQL queries with intelligent sampling",
     "query_range": "Execute range queries for temporal log analysis",
-    "tail_logs": "Stream live logs in real-time (limited duration)",
+    "tail_logs": "Stream live logs via Loki WebSocket tail API",
     "analyze_logs": "AI-powered log analysis and pattern detection",
     "detect_anomalies": "Identify unusual log patterns and errors",
     "search_errors": "Find error messages and exceptions in logs",
@@ -30,8 +32,8 @@ LOKI_OPERATIONS = {
     "get_labels": "List available log labels and their values",
     "get_label_values": "Get values for specific log labels",
     "get_series": "Get series information for log streams",
-    "create_alert_rule": "Create log-based alerting rules",
-    "list_alerts": "List active log-based alerts",
+    "create_alert_rule": "Create log-based alerting rules (Loki ruler)",
+    "list_alerts": "List Loki ruler rules / alerting groups",
     "optimize_queries": "Suggest LogQL query optimizations",
     "export_logs": "Export logs in various formats for analysis",
     "compare_timeframes": "Compare log patterns between time periods",
@@ -40,40 +42,55 @@ LOKI_OPERATIONS = {
 
 
 class LokiClient:
-    """Loki API client with authentication and error handling."""
+    """Loki API client with auth, cache, and WebSocket tail."""
 
     def __init__(self, config: MonitoringConfig):
         self.config = config
         self.base_url = config.loki_url.rstrip("/")
         self.timeout = config.request_timeout
+        self.auth_headers = config.get_loki_auth() or {}
+        self.cache = ResponseCache(
+            ttl_seconds=config.cache_ttl_seconds,
+            enabled=config.enable_cache,
+        )
 
     async def _make_request(
         self,
         endpoint: str,
         params: dict[str, Any] | None = None,
+        *,
+        method: str = "GET",
+        json_body: dict[str, Any] | None = None,
+        use_cache: bool = False,
     ) -> dict[str, Any]:
-        """Make request to Loki API."""
-        url = f"{self.base_url}/{endpoint}"
+        url = f"{self.base_url}/{endpoint.lstrip('/')}"
+        cache_key = ("loki", method, endpoint, params, json_body)
+        if use_cache and method == "GET":
+            cached = self.cache.get(*cache_key)
+            if cached is not None:
+                return cached
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
-            response = await client.get(url, params=params)
-
+            response = await client.request(
+                method,
+                url,
+                params=params,
+                json=json_body,
+                headers=self.auth_headers,
+            )
             if response.status_code >= 400:
                 error_msg = f"Loki API error {response.status_code}: {response.text}"
                 logger.error(error_msg)
                 raise httpx.HTTPStatusError(error_msg, request=response.request, response=response)
-
-            return response.json()
+            data = response.json()
+            if use_cache and method == "GET":
+                self.cache.set(*cache_key, value=data)
+            return data
 
     async def query(
         self, query: str, limit: int = 100, time: str | None = None, direction: str = "backward"
     ) -> dict[str, Any]:
-        """Execute instant log query."""
-        params = {
-            "query": query,
-            "limit": limit,
-            "direction": direction,
-        }
+        params: dict[str, Any] = {"query": query, "limit": limit, "direction": direction}
         if time:
             params["time"] = time
         return await self._make_request("loki/api/v1/query", params)
@@ -87,42 +104,135 @@ class LokiClient:
         step: str = "1m",
         direction: str = "backward",
     ) -> dict[str, Any]:
-        """Execute range log query."""
-        params = {
-            "query": query,
-            "start": start,
-            "end": end,
-            "limit": limit,
-            "step": step,
-            "direction": direction,
-        }
-        return await self._make_request("loki/api/v1/query_range", params)
+        return await self._make_request(
+            "loki/api/v1/query_range",
+            {
+                "query": query,
+                "start": start,
+                "end": end,
+                "limit": limit,
+                "step": step,
+                "direction": direction,
+            },
+        )
 
-    async def tail(self, query: str, delay_for: int = 0, limit: int = 100) -> dict[str, Any]:
-        """Tail logs (limited implementation)."""
-        params = {
-            "query": query,
-            "delay_for": delay_for,
-            "limit": limit,
-        }
-        return await self._make_request("loki/api/v1/tail", params)
+    async def tail(
+        self,
+        query: str,
+        *,
+        limit: int = 100,
+        duration_seconds: float = 5.0,
+        delay_for: int = 0,
+    ) -> dict[str, Any]:
+        """
+        Tail Loki via WebSocket ``/loki/api/v1/tail``.
+
+        Falls back to a short query_range window if websockets is unavailable
+        or the connection fails.
+        """
+        try:
+            import websockets
+            from websockets.exceptions import ConnectionClosed
+        except ImportError:
+            return await self._tail_fallback(query, limit=limit)
+
+        parsed = urlparse(self.base_url)
+        ws_scheme = "wss" if parsed.scheme == "https" else "ws"
+        qs = urlencode({"query": query, "delay_for": delay_for, "limit": limit})
+        ws_url = urlunparse((ws_scheme, parsed.netloc, "/loki/api/v1/tail", "", qs, ""))
+
+        streams: dict[str, dict[str, Any]] = {}
+        entries: list[dict[str, Any]] = []
+
+        try:
+            extra_headers = dict(self.auth_headers)
+            async with websockets.connect(
+                ws_url,
+                additional_headers=extra_headers or None,
+                open_timeout=self.timeout,
+                close_timeout=5,
+            ) as ws:
+                deadline = asyncio.get_event_loop().time() + duration_seconds
+                while asyncio.get_event_loop().time() < deadline and len(entries) < limit:
+                    remaining = deadline - asyncio.get_event_loop().time()
+                    if remaining <= 0:
+                        break
+                    try:
+                        raw = await asyncio.wait_for(ws.recv(), timeout=min(remaining, 2.0))
+                    except TimeoutError:
+                        continue
+                    except ConnectionClosed:
+                        break
+                    msg = json.loads(raw) if isinstance(raw, str) else json.loads(raw.decode())
+                    for stream in msg.get("streams", []) or []:
+                        labels = stream.get("stream") or {}
+                        key = json.dumps(labels, sort_keys=True)
+                        bucket = streams.setdefault(key, {"stream": labels, "values": []})
+                        for value in stream.get("values", []) or []:
+                            bucket["values"].append(value)
+                            entries.append({"stream": labels, "value": value})
+                            if len(entries) >= limit:
+                                break
+            return {
+                "status": "success",
+                "data": {"resultType": "streams", "result": list(streams.values())},
+                "transport": "websocket",
+            }
+        except Exception as exc:
+            logger.warning("Loki WebSocket tail failed (%s); falling back to query_range", exc)
+            fallback = await self._tail_fallback(query, limit=limit)
+            fallback["websocket_error"] = str(exc)
+            return fallback
+
+    async def _tail_fallback(self, query: str, *, limit: int = 100) -> dict[str, Any]:
+        result = await self.query_range(query, "now-2m", "now", limit=limit, step="1s")
+        result["transport"] = "query_range_fallback"
+        result["note"] = "WebSocket tail unavailable; returned last 2 minutes via query_range"
+        return result
 
     async def labels(self) -> dict[str, Any]:
-        """Get all available labels."""
-        return await self._make_request("loki/api/v1/labels")
+        return await self._make_request("loki/api/v1/labels", use_cache=True)
 
     async def label_values(self, label: str) -> dict[str, Any]:
-        """Get values for a specific label."""
-        return await self._make_request(f"loki/api/v1/label/{label}/values")
+        return await self._make_request(f"loki/api/v1/label/{label}/values", use_cache=True)
 
     async def series(self, match: list[str], start: str | None = None, end: str | None = None) -> dict[str, Any]:
-        """Get series information."""
-        params = {"match": match}
+        params: dict[str, Any] = [("match[]", m) for m in match]
         if start:
-            params["start"] = start
+            params.append(("start", start))
         if end:
-            params["end"] = end
-        return await self._make_request("loki/api/v1/series", params)
+            params.append(("end", end))
+        # httpx accepts list of tuples for repeated keys
+        url = f"{self.base_url}/loki/api/v1/series"
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            response = await client.get(url, params=params, headers=self.auth_headers)
+            if response.status_code >= 400:
+                error_msg = f"Loki API error {response.status_code}: {response.text}"
+                raise httpx.HTTPStatusError(error_msg, request=response.request, response=response)
+            return response.json()
+
+    async def ruler_rules(self) -> dict[str, Any]:
+        return await self._make_request("loki/api/v1/rules")
+
+    async def create_ruler_rule(self, namespace: str, group_yaml_or_json: dict[str, Any] | str) -> dict[str, Any]:
+        """POST rule group to Loki ruler. Accepts JSON group or raw YAML string."""
+        if isinstance(group_yaml_or_json, str):
+            url = f"{self.base_url}/loki/api/v1/rules/{namespace}"
+            headers = {**self.auth_headers, "Content-Type": "application/yaml"}
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.post(url, content=group_yaml_or_json, headers=headers)
+                if response.status_code >= 400:
+                    raise httpx.HTTPStatusError(
+                        f"Loki ruler error {response.status_code}: {response.text}",
+                        request=response.request,
+                        response=response,
+                    )
+                return {"status": "ok", "namespace": namespace, "response": response.text}
+        return await self._make_request(
+            f"loki/api/v1/rules/{namespace}",
+            method="POST",
+            json_body=group_yaml_or_json,
+        )
 
 
 def register_loki_tool(
@@ -161,92 +271,57 @@ def register_loki_tool(
         label_name: str | None = None,
         match_patterns: list[str] | None = None,
         analysis_context: dict[str, Any] | None = None,
+        alert_rule: dict[str, Any] | str | None = None,
+        rule_namespace: str | None = None,
         export_format: str | None = None,
-        comparison_periods: dict[str, Any] | None = None,
+        compare_start: str | None = None,
+        compare_end: str | None = None,
+        tail_duration_seconds: float | None = None,
     ) -> dict[str, Any]:
-        """
-        Comprehensive Loki logging portmanteau tool leveraging FastMCP 2.14.3.
-
-        PORTMANTEAU PATTERN: Consolidates 16 Loki operations into a single tool
-        to prevent tool explosion while maintaining comprehensive functionality.
-
-        Provides intelligent LogQL assistance, pattern recognition, and conversational
-        insights for log analysis and troubleshooting.
-
-        Args:
-            operation: The Loki operation to perform
-            query: LogQL query string for log operations
-            start_time: Start time for range queries (RFC3339 or unix timestamp)
-            end_time: End time for range queries (RFC3339 or unix timestamp)
-            limit: Maximum number of log entries to return
-            label_name: Label name for label operations
-            match_patterns: Stream selectors for series operations
-            analysis_context: Additional context for AI analysis operations
-            export_format: Format for log export operations
-            comparison_periods: Time periods for comparison operations
-
-        Returns:
-            Dict containing operation results with conversational summary and insights
-        """
+        """Comprehensive Loki logging portmanteau tool."""
         try:
             if operation not in LOKI_OPERATIONS:
                 return {
                     "success": False,
                     "error": f"Invalid operation '{operation}'. Available: {list(LOKI_OPERATIONS.keys())}",
-                    "conversational_summary": f"I don't recognize the '{operation}' operation. Here are the available Loki operations I can help with.",
+                    "conversational_summary": f"I don't recognize the '{operation}' operation.",
                     "available_operations": list(LOKI_OPERATIONS.keys()),
                 }
 
-            logger.info(f"Executing Loki operation: {operation}")
-
-            # Execute the requested operation
             result = await _execute_loki_operation(
                 client,
                 operation,
-                query,
-                start_time,
-                end_time,
-                limit,
-                label_name,
-                match_patterns,
-                analysis_context,
-                export_format,
-                comparison_periods,
+                query=query,
+                start_time=start_time,
+                end_time=end_time,
+                limit=limit,
+                label_name=label_name,
+                match_patterns=match_patterns,
+                analysis_context=analysis_context,
+                alert_rule=alert_rule,
+                rule_namespace=rule_namespace,
+                export_format=export_format,
+                compare_start=compare_start,
+                compare_end=compare_end,
+                tail_duration_seconds=tail_duration_seconds,
             )
-
-            # Add conversational insights
             result["conversational_summary"] = _generate_loki_summary(operation, result)
-
-            # Add AI-powered recommendations where appropriate
-            if operation in [
-                "query_logs",
-                "query_range",
-                "analyze_logs",
-                "detect_anomalies",
-                "search_errors",
-            ]:
+            if operation in ["query_logs", "search_errors", "detect_anomalies"]:
                 result["ai_insights"] = _generate_loki_insights(operation, result)
-
             return result
-
         except Exception as e:
-            logger.error(f"Error in Loki operation '{operation}': {e}", exc_info=True)
+            logger.error("Error in Loki operation '%s': %s", operation, e, exc_info=True)
             return {
                 "success": False,
                 "error": f"Failed to execute Loki operation '{operation}': {e!s}",
-                "conversational_summary": f"I encountered an error while trying to {operation.replace('_', ' ')}. This might be due to connectivity issues with Loki or invalid LogQL syntax. Please check your Loki configuration and try again.",
-                "troubleshooting_tips": [
-                    "Verify Loki is running and accessible",
-                    "Check LogQL query syntax (it can be complex)",
-                    "Ensure time ranges are valid",
-                    "Validate label names exist in your logs",
-                ],
+                "conversational_summary": f"Error during {operation.replace('_', ' ')}. Check Loki URL and auth.",
             }
 
 
 async def _execute_loki_operation(
     client: LokiClient,
     operation: str,
+    *,
     query: str | None = None,
     start_time: str | None = None,
     end_time: str | None = None,
@@ -254,36 +329,46 @@ async def _execute_loki_operation(
     label_name: str | None = None,
     match_patterns: list[str] | None = None,
     analysis_context: dict[str, Any] | None = None,
+    alert_rule: dict[str, Any] | str | None = None,
+    rule_namespace: str | None = None,
     export_format: str | None = None,
-    comparison_periods: dict[str, Any] | None = None,
+    compare_start: str | None = None,
+    compare_end: str | None = None,
+    tail_duration_seconds: float | None = None,
 ) -> dict[str, Any]:
-    """Execute the specific Loki operation."""
-
-    limit = limit or 100
+    cfg = client.config
+    limit = min(limit or 100, cfg.max_results_limit)
 
     if operation == "query_logs":
         if not query:
             raise ValueError("query is required for query_logs")
         result = await client.query(query, limit=limit)
         streams = result.get("data", {}).get("result", [])
-        total_entries = sum(len(stream.get("values", [])) for stream in streams)
-
+        sampled, sample_meta = sample_list(
+            streams,
+            enable_sampling=cfg.enable_sampling,
+            sampling_threshold=cfg.sampling_threshold,
+            sampling_rate=cfg.sampling_rate,
+        )
+        if sample_meta["sampled"]:
+            result = {**result, "data": {**result.get("data", {}), "result": sampled}}
+        total_entries = sum(len(s.get("values", [])) for s in sampled)
         return {
             "success": True,
             "operation": "query_logs",
             "data": result,
             "query": query,
-            "stream_count": len(streams),
+            "stream_count": len(sampled),
             "total_entries": total_entries,
+            "sampling": sample_meta,
         }
 
-    elif operation == "query_range":
+    if operation == "query_range":
         if not query or not start_time or not end_time:
             raise ValueError("query, start_time, and end_time are required for query_range")
         result = await client.query_range(query, start_time, end_time, limit=limit)
         streams = result.get("data", {}).get("result", [])
-        total_entries = sum(len(stream.get("values", [])) for stream in streams)
-
+        total_entries = sum(len(s.get("values", [])) for s in streams)
         return {
             "success": True,
             "operation": "query_range",
@@ -294,14 +379,16 @@ async def _execute_loki_operation(
             "total_entries": total_entries,
         }
 
-    elif operation == "tail_logs":
+    if operation == "tail_logs":
         if not query:
             raise ValueError("query is required for tail_logs")
-        # Limit tail duration for safety
-        result = await client.tail(query, limit=min(limit, 50))
+        result = await client.tail(
+            query,
+            limit=min(limit, 50),
+            duration_seconds=tail_duration_seconds or 5.0,
+        )
         streams = result.get("data", {}).get("result", [])
-        total_entries = sum(len(stream.get("values", [])) for stream in streams)
-
+        total_entries = sum(len(s.get("values", [])) for s in streams)
         return {
             "success": True,
             "operation": "tail_logs",
@@ -309,21 +396,16 @@ async def _execute_loki_operation(
             "query": query,
             "stream_count": len(streams),
             "total_entries": total_entries,
-            "note": "Tail operation limited to prevent excessive resource usage",
+            "transport": result.get("transport"),
+            "note": result.get("note") or "WebSocket tail completed",
         }
 
-    elif operation == "get_labels":
+    if operation == "get_labels":
         result = await client.labels()
         labels = result.get("data", [])
-        return {
-            "success": True,
-            "operation": "get_labels",
-            "data": result,
-            "label_count": len(labels),
-            "labels": labels,
-        }
+        return {"success": True, "operation": "get_labels", "data": result, "label_count": len(labels), "labels": labels}
 
-    elif operation == "get_label_values":
+    if operation == "get_label_values":
         if not label_name:
             raise ValueError("label_name is required for get_label_values")
         result = await client.label_values(label_name)
@@ -334,39 +416,27 @@ async def _execute_loki_operation(
             "data": result,
             "label": label_name,
             "value_count": len(values),
-            "values": values[:50],  # Limit for performance
         }
 
-    elif operation == "get_series":
+    if operation == "get_series":
         if not match_patterns:
             raise ValueError("match_patterns is required for get_series")
         result = await client.series(match_patterns, start_time, end_time)
         series = result.get("data", [])
-        return {
-            "success": True,
-            "operation": "get_series",
-            "data": result,
-            "match_patterns": match_patterns,
-            "series_count": len(series),
-        }
+        return {"success": True, "operation": "get_series", "data": result, "series_count": len(series)}
 
-    elif operation in ["analyze_logs", "detect_anomalies", "search_errors"]:
+    if operation in ["analyze_logs", "detect_anomalies", "search_errors"]:
         if not query:
             raise ValueError(f"query is required for {operation}")
-
-        # Get logs first
         result = await client.query_range(
-            query, start_time or "now-1h", end_time or "now", limit=min(limit or 1000, 1000)
+            query, start_time or "now-1h", end_time or "now", limit=min(limit, 1000)
         )
-
-        # Analyze based on operation type
         if operation == "analyze_logs":
             analysis = _analyze_log_patterns(result, analysis_context or {})
         elif operation == "detect_anomalies":
             analysis = _detect_log_anomalies(result, analysis_context or {})
-        elif operation == "search_errors":
+        else:
             analysis = _search_error_patterns(result, analysis_context or {})
-
         return {
             "success": True,
             "operation": operation,
@@ -375,385 +445,296 @@ async def _execute_loki_operation(
             "query": query,
         }
 
-    elif operation == "trace_requests":
+    if operation == "trace_requests":
         if not query:
             raise ValueError("query is required for trace_requests")
-        # Look for request IDs or correlation IDs in logs
-        trace_query = f'{query} |~ "request.*id|trace.*id|correlation.*id"'
+        trace_query = f'{query} |~ "(?i)request.?id|trace.?id|correlation.?id|x-request-id"'
         result = await client.query_range(
-            trace_query, start_time or "now-1h", end_time or "now", limit=min(limit or 500, 500)
+            trace_query, start_time or "now-1h", end_time or "now", limit=min(limit, 500)
         )
-
-        trace_analysis = _analyze_request_traces(result)
-
         return {
             "success": True,
             "operation": "trace_requests",
             "data": result,
-            "analysis": trace_analysis,
+            "analysis": _analyze_request_traces(result),
             "query": trace_query,
         }
 
-    # Placeholder implementations for operations not yet implemented
-    elif operation in [
-        "create_alert_rule",
-        "list_alerts",
-        "optimize_queries",
-        "export_logs",
-        "compare_timeframes",
-        "generate_report",
-    ]:
+    if operation == "list_alerts":
+        try:
+            rules = await client.ruler_rules()
+            return {"success": True, "operation": "list_alerts", "data": rules}
+        except Exception as exc:
+            return {
+                "success": False,
+                "operation": "list_alerts",
+                "error": str(exc),
+                "note": "Loki ruler API may be disabled; enable ruler or use Grafana alerting",
+            }
+
+    if operation == "create_alert_rule":
+        if not alert_rule:
+            raise ValueError("alert_rule is required (ruler group JSON/YAML)")
+        namespace = rule_namespace or "monitoring-mcp"
+        created = await client.create_ruler_rule(namespace, alert_rule)
+        return {"success": True, "operation": "create_alert_rule", "data": created, "namespace": namespace}
+
+    if operation == "optimize_queries":
+        if not query:
+            raise ValueError("query is required for optimize_queries")
         return {
-            "success": False,
-            "operation": operation,
-            "error": f"Operation '{operation}' is not yet implemented",
-            "note": "This operation is planned for a future version",
+            "success": True,
+            "operation": "optimize_queries",
+            "query": query,
+            "optimizations": _optimize_logql(query),
         }
 
-    else:
-        raise ValueError(f"Unsupported operation: {operation}")
+    if operation == "export_logs":
+        if not query:
+            raise ValueError("query is required for export_logs")
+        result = await client.query_range(
+            query, start_time or "now-1h", end_time or "now", limit=min(limit, cfg.max_results_limit)
+        )
+        fmt = (export_format or "json").lower()
+        exported = _export_logs(result, fmt)
+        return {
+            "success": True,
+            "operation": "export_logs",
+            "format": fmt,
+            "export": exported,
+            "entry_count": exported.get("entry_count", 0),
+        }
+
+    if operation == "compare_timeframes":
+        if not query:
+            raise ValueError("query is required for compare_timeframes")
+        primary = await client.query_range(
+            query, start_time or "now-1h", end_time or "now", limit=min(limit, 500)
+        )
+        secondary = await client.query_range(
+            query,
+            compare_start or "now-2h",
+            compare_end or "now-1h",
+            limit=min(limit, 500),
+        )
+        return {
+            "success": True,
+            "operation": "compare_timeframes",
+            "comparison": _compare_timeframes(primary, secondary),
+            "primary_range": {"start": start_time or "now-1h", "end": end_time or "now"},
+            "compare_range": {"start": compare_start or "now-2h", "end": compare_end or "now-1h"},
+        }
+
+    if operation == "generate_report":
+        if not query:
+            raise ValueError("query is required for generate_report")
+        result = await client.query_range(
+            query, start_time or "now-1h", end_time or "now", limit=min(limit, 1000)
+        )
+        patterns = _analyze_log_patterns(result, analysis_context or {})
+        anomalies = _detect_log_anomalies(result, analysis_context or {})
+        errors = _search_error_patterns(result, analysis_context or {})
+        return {
+            "success": True,
+            "operation": "generate_report",
+            "report": {
+                "query": query,
+                "time_range": {"start": start_time or "now-1h", "end": end_time or "now"},
+                "patterns": patterns,
+                "anomalies": anomalies,
+                "errors": errors,
+                "summary": (
+                    f"Report: {errors.get('error_count', 0)} errors, "
+                    f"{len(anomalies.get('anomalies', []))} anomalies, "
+                    f"{len(patterns.get('patterns', []))} patterns."
+                ),
+            },
+        }
+
+    raise ValueError(f"Unsupported operation: {operation}")
+
+
+def _optimize_logql(query: str) -> list[dict[str, str]]:
+    tips: list[dict[str, str]] = []
+    if "{}" in query or query.strip() == "{}":
+        tips.append(
+            {
+                "type": "unbounded_selector",
+                "description": "Empty stream selector scans all streams",
+                "suggestion": "Add label matchers e.g. {job=\"api\"}",
+            }
+        )
+    if "|=" in query and "|~" in query:
+        tips.append(
+            {
+                "type": "filter_order",
+                "description": "Prefer line filters before parsers",
+                "suggestion": "Put |= / |~ filters early to reduce volume",
+            }
+        )
+    if "json" in query and "|=" not in query and "|~" not in query:
+        tips.append(
+            {
+                "type": "parse_without_filter",
+                "description": "Parsing all lines is expensive",
+                "suggestion": "Filter with |= before | json",
+            }
+        )
+    if not tips:
+        tips.append({"type": "ok", "description": "Query looks reasonable", "suggestion": "No changes needed"})
+    return tips
+
+
+def _export_logs(log_data: dict[str, Any], fmt: str) -> dict[str, Any]:
+    rows: list[dict[str, Any]] = []
+    for stream in log_data.get("data", {}).get("result", []):
+        labels = stream.get("stream", {})
+        for ts, line in stream.get("values", []):
+            rows.append({"timestamp": ts, "line": line, "labels": labels})
+    if fmt == "csv":
+        lines = ["timestamp,line,labels"]
+        for row in rows:
+            safe_line = row["line"].replace('"', '""')
+            lines.append(f'{row["timestamp"]},"{safe_line}","{json.dumps(row["labels"])}"')
+        return {"entry_count": len(rows), "csv": "\n".join(lines)}
+    if fmt == "text":
+        text = "\n".join(f"{r['timestamp']} {r['line']}" for r in rows)
+        return {"entry_count": len(rows), "text": text}
+    return {"entry_count": len(rows), "json": rows}
+
+
+def _compare_timeframes(primary: dict[str, Any], secondary: dict[str, Any]) -> dict[str, Any]:
+    def count_entries(data: dict[str, Any]) -> int:
+        return sum(len(s.get("values", [])) for s in data.get("data", {}).get("result", []))
+
+    p = count_entries(primary)
+    s = count_entries(secondary)
+    delta = p - s
+    pct = (delta / s * 100) if s else (100.0 if p else 0.0)
+    return {
+        "primary_entries": p,
+        "compare_entries": s,
+        "delta": delta,
+        "percent_change": round(pct, 2),
+        "interpretation": "volume_up" if delta > 0 else "volume_down" if delta < 0 else "stable",
+    }
 
 
 def _generate_loki_summary(operation: str, result: dict[str, Any]) -> str:
-    """Generate conversational summary for Loki operation results."""
     if not result.get("success"):
-        return f"I wasn't able to complete the {operation.replace('_', ' ')} operation. {result.get('error', 'Unknown error occurred')}."
-
+        return f"I wasn't able to complete the {operation.replace('_', ' ')} operation. {result.get('error', '')}"
     if operation in ["query_logs", "query_range"]:
-        streams = result.get("stream_count", 0)
-        entries = result.get("total_entries", 0)
-        time_info = ""
-        if operation == "query_range":
-            time_range = result.get("time_range", {})
-            time_info = f" from {time_range.get('start', 'unknown')} to {time_range.get('end', 'unknown')}"
-
-        if entries == 0:
-            return f"I searched your logs{time_info} but didn't find any entries matching your query. You might want to check your LogQL syntax or expand your time range."
-        elif entries == 1:
-            return f"I found 1 log entry across {streams} stream{'s' if streams != 1 else ''}{time_info}. Here's the result:"
-        else:
-            return f"I found {entries} log entries across {streams} stream{'s' if streams != 1 else ''}{time_info}. Here's a sampling of the results:"
-
-    elif operation == "tail_logs":
-        entries = result.get("total_entries", 0)
-        return f"I tailed your logs and captured {entries} recent entries. This gives you a live view of what's happening right now."
-
-    elif operation == "get_labels":
-        count = result.get("label_count", 0)
-        return f"I found {count} label{'s' if count != 1 else ''} available in your Loki instance. Labels help you filter and organize your logs."
-
-    elif operation == "get_label_values":
-        count = result.get("value_count", 0)
-        label = result.get("label", "unknown")
-        return f"For the '{label}' label, I found {count} unique value{'s' if count != 1 else ''}. This helps you understand the scope of your labeled data."
-
-    elif operation == "get_series":
-        count = result.get("series_count", 0)
-        return f"I found {count} log series matching your patterns. Each series represents a unique combination of label values."
-
-    elif operation == "analyze_logs":
-        analysis = result.get("analysis", {})
-        patterns = len(analysis.get("patterns", []))
-        return f"I analyzed your logs and identified {patterns} distinct pattern{'s' if patterns != 1 else ''}. {analysis.get('summary', 'Review the detailed analysis for insights.')}"
-
-    elif operation == "detect_anomalies":
-        analysis = result.get("analysis", {})
-        anomalies = len(analysis.get("anomalies", []))
-        return f"I scanned your logs for anomalies and found {anomalies} potential issue{'s' if anomalies != 1 else ''}. {analysis.get('summary', 'Review the detailed analysis for specific concerns.')}"
-
-    elif operation == "search_errors":
-        analysis = result.get("analysis", {})
-        errors = analysis.get("error_count", 0)
-        if errors == 0:
-            return "Great news! I didn't find any error messages in the logs for your search criteria. Your systems appear to be running smoothly."
-        else:
-            return f"I found {errors} error message{'s' if errors != 1 else ''} in your logs. Here's what I discovered:"
-
-    elif operation == "trace_requests":
-        analysis = result.get("analysis", {})
-        traces = len(analysis.get("request_traces", []))
-        return f"I traced request flows through your logs and found {traces} request trace{'s' if traces != 1 else ''}. This helps you understand how requests flow through your system."
-
-    else:
-        return f"The {operation.replace('_', ' ')} operation completed successfully."
+        return f"Found {result.get('total_entries', 0)} log entries across {result.get('stream_count', 0)} streams."
+    if operation == "tail_logs":
+        return f"Tailed {result.get('total_entries', 0)} entries via {result.get('transport', 'unknown')}."
+    if operation == "generate_report":
+        return (result.get("report") or {}).get("summary", "Report generated.")
+    return f"The {operation.replace('_', ' ')} operation completed successfully."
 
 
 def _generate_loki_insights(operation: str, result: dict[str, Any]) -> dict[str, Any]:
-    """Generate AI-powered insights for Loki operations."""
-    insights = {"recommendations": [], "alerting_opportunities": [], "optimization_suggestions": []}
-
-    if operation == "query_logs":
-        entries = result.get("total_entries", 0)
-        if entries > 5000:
-            insights["optimization_suggestions"].append(
-                "Consider narrowing your query with more specific label selectors for better performance"
-            )
-        elif entries == 0:
-            insights["optimization_suggestions"].append(
-                "Try broadening your time range or checking label names in your query"
-            )
-
-    elif operation == "search_errors":
-        analysis = result.get("analysis", {})
-        error_count = analysis.get("error_count", 0)
-        if error_count > 10:
-            insights["alerting_opportunities"].append(
-                f"Consider setting up alerts for the {error_count} errors found in this search"
-            )
-
-    elif operation == "detect_anomalies":
-        analysis = result.get("analysis", {})
-        anomalies = analysis.get("anomalies", [])
-        if anomalies:
-            insights["recommendations"].append(f"Review {len(anomalies)} anomalous log patterns for potential issues")
-
+    insights: dict[str, list[str]] = {
+        "recommendations": [],
+        "alerting_opportunities": [],
+        "optimization_suggestions": [],
+    }
+    if operation == "query_logs" and result.get("total_entries", 0) > 5000:
+        insights["optimization_suggestions"].append("Narrow label selectors for better performance")
+    if operation == "search_errors" and (result.get("analysis") or {}).get("error_count", 0) > 10:
+        insights["alerting_opportunities"].append("Set up alerts for recurring error patterns")
     return insights
 
 
 def _analyze_log_patterns(log_data: dict[str, Any], _context: dict[str, Any]) -> dict[str, Any]:
-    """Analyze log patterns for common themes and structures."""
     streams = log_data.get("data", {}).get("result", [])
-
-    analysis = {
-        "patterns": [],
-        "frequency_analysis": {},
-        "summary": "Log pattern analysis completed.",
-    }
-
-    # Basic pattern analysis
-    all_messages = []
-    for stream in streams:
-        values = stream.get("values", [])
-        for _, message in values:
-            all_messages.append(message)
-
-    # Look for common error patterns
+    all_messages = [msg for stream in streams for _, msg in stream.get("values", [])]
+    analysis: dict[str, Any] = {"patterns": [], "frequency_analysis": {}, "summary": "Log pattern analysis completed."}
     error_patterns = ["ERROR", "Exception", "Failed", "Timeout", "Connection refused"]
-    error_count = sum(1 for msg in all_messages if any(pattern.lower() in msg.lower() for pattern in error_patterns))
-
-    # Look for common HTTP status patterns
-    http_patterns = ["200", "404", "500", "403", "502"]
-    http_count = sum(1 for msg in all_messages if any(pattern in msg for pattern in http_patterns))
-
-    if error_count > 0:
-        analysis["patterns"].append(
-            {
-                "type": "errors",
-                "count": error_count,
-                "description": f"Found {error_count} messages containing error indicators",
-            }
-        )
-
-    if http_count > 0:
-        analysis["patterns"].append(
-            {
-                "type": "http_status",
-                "count": http_count,
-                "description": f"Found {http_count} messages with HTTP status codes",
-            }
-        )
-
-    if not analysis["patterns"]:
-        analysis["summary"] = "No specific patterns detected in the log sample."
+    error_count = sum(1 for msg in all_messages if any(p.lower() in msg.lower() for p in error_patterns))
+    if error_count:
+        analysis["patterns"].append({"type": "errors", "count": error_count, "description": f"{error_count} error-like messages"})
+    if analysis["patterns"]:
+        analysis["summary"] = f"Identified {len(analysis['patterns'])} log patterns."
     else:
-        analysis["summary"] = f"Identified {len(analysis['patterns'])} log patterns for analysis."
-
+        analysis["summary"] = "No specific patterns detected."
     return analysis
 
 
 def _detect_log_anomalies(log_data: dict[str, Any], _context: dict[str, Any]) -> dict[str, Any]:
-    """Detect anomalous patterns in logs."""
     streams = log_data.get("data", {}).get("result", [])
-
-    analysis = {
-        "anomalies": [],
-        "severity_score": 0,
-        "summary": "Anomaly detection completed.",
-    }
-
-    # Basic anomaly detection
-    all_messages = []
-    timestamps = []
-
-    for stream in streams:
-        values = stream.get("values", [])
-        for timestamp, message in values:
-            all_messages.append(message)
-            timestamps.append(float(timestamp))
-
-    # Check for sudden spikes in error messages
-    error_messages = [msg for msg in all_messages if "ERROR" in msg.upper() or "Exception" in msg]
-    if len(error_messages) > len(all_messages) * 0.1:  # More than 10% errors
+    all_messages = [msg for stream in streams for _, msg in stream.get("values", [])]
+    analysis: dict[str, Any] = {"anomalies": [], "severity_score": 0, "summary": "Anomaly detection completed."}
+    error_messages = [m for m in all_messages if "ERROR" in m.upper() or "Exception" in m]
+    if all_messages and len(error_messages) > len(all_messages) * 0.1:
         analysis["anomalies"].append(
             {
                 "type": "high_error_rate",
                 "severity": "high",
-                "description": f"High error rate detected: {len(error_messages)}/{len(all_messages)} messages contain errors",
-                "recommendation": "Investigate the source of these errors",
+                "description": f"High error rate: {len(error_messages)}/{len(all_messages)}",
             }
         )
         analysis["severity_score"] += 3
-
-    # Check for connection issues
-    connection_issues = [
-        msg
-        for msg in all_messages
-        if any(term in msg.lower() for term in ["connection refused", "timeout", "unreachable"])
-    ]
-    if connection_issues:
-        analysis["anomalies"].append(
-            {
-                "type": "connection_issues",
-                "severity": "medium",
-                "description": f"Found {len(connection_issues)} connection-related issues",
-                "recommendation": "Check network connectivity and service availability",
-            }
-        )
-        analysis["severity_score"] += 2
-
-    # Check for timestamp anomalies (logs coming out of order)
-    if timestamps and len(timestamps) > 1:
-        sorted_timestamps = sorted(timestamps)
-        if timestamps != sorted_timestamps:
-            analysis["anomalies"].append(
-                {
-                    "type": "timestamp_anomaly",
-                    "severity": "low",
-                    "description": "Log entries appear out of chronological order",
-                    "recommendation": "Verify log shipping configuration",
-                }
-            )
-            analysis["severity_score"] += 1
-
     if not analysis["anomalies"]:
-        analysis["summary"] = "No significant anomalies detected in the log sample."
+        analysis["summary"] = "No significant anomalies detected."
     else:
-        severity = "high" if analysis["severity_score"] > 3 else "medium" if analysis["severity_score"] > 1 else "low"
-        analysis["summary"] = (
-            f"Detected {len(analysis['anomalies'])} anomal{'ies' if len(analysis['anomalies']) != 1 else 'y'} with {severity} severity."
-        )
-
+        analysis["summary"] = f"Detected {len(analysis['anomalies'])} anomalies."
     return analysis
 
 
 def _search_error_patterns(log_data: dict[str, Any], _context: dict[str, Any]) -> dict[str, Any]:
-    """Search for error patterns in logs."""
     streams = log_data.get("data", {}).get("result", [])
-
-    analysis = {
-        "error_count": 0,
-        "error_types": {},
-        "error_samples": [],
-        "summary": "Error search completed.",
-    }
-
-    error_keywords = [
-        "ERROR",
-        "Exception",
-        "Failed",
-        "Timeout",
-        "Connection refused",
-        "Internal server error",
-        "NullPointerException",
-        "KeyError",
-        "ValueError",
-        "TypeError",
-        "500",
-        "502",
-        "503",
-        "504",
-    ]
-
+    analysis: dict[str, Any] = {"error_count": 0, "error_types": {}, "error_samples": [], "summary": "Error search completed."}
+    keywords = ["ERROR", "Exception", "Failed", "Timeout", "Connection refused", "500", "502", "503"]
     for stream in streams:
-        values = stream.get("values", [])
-        for timestamp, message in values:
-            if any(keyword.lower() in message.lower() for keyword in error_keywords):
+        for timestamp, message in stream.get("values", []):
+            if any(k.lower() in message.lower() for k in keywords):
                 analysis["error_count"] += 1
-
-                # Categorize error types
-                if "timeout" in message.lower():
-                    analysis["error_types"]["timeout"] = analysis["error_types"].get("timeout", 0) + 1
-                elif "connection" in message.lower():
-                    analysis["error_types"]["connection"] = analysis["error_types"].get("connection", 0) + 1
-                elif "500" in message:
-                    analysis["error_types"]["server_error"] = analysis["error_types"].get("server_error", 0) + 1
-                elif "exception" in message.lower():
-                    analysis["error_types"]["exception"] = analysis["error_types"].get("exception", 0) + 1
-                else:
-                    analysis["error_types"]["other"] = analysis["error_types"].get("other", 0) + 1
-
-                # Collect sample errors (limit to 5)
                 if len(analysis["error_samples"]) < 5:
                     analysis["error_samples"].append(
-                        {
-                            "timestamp": timestamp,
-                            "message": message[:200] + "..." if len(message) > 200 else message,
-                            "stream_labels": stream.get("stream", {}),
-                        }
+                        {"timestamp": timestamp, "message": message[:200], "stream_labels": stream.get("stream", {})}
                     )
-
-    if analysis["error_count"] == 0:
-        analysis["summary"] = "No error messages found in the log sample."
-    else:
-        top_error_type = (
-            max(analysis["error_types"].items(), key=lambda x: x[1]) if analysis["error_types"] else ("unknown", 0)
-        )
-        analysis["summary"] = (
-            f"Found {analysis['error_count']} error messages, with '{top_error_type[0]}' being the most common type."
-        )
-
+    analysis["summary"] = (
+        f"Found {analysis['error_count']} error messages."
+        if analysis["error_count"]
+        else "No error messages found."
+    )
     return analysis
 
 
 def _analyze_request_traces(log_data: dict[str, Any]) -> dict[str, Any]:
-    """Analyze request traces through log streams."""
-    streams = log_data.get("data", {}).get("result", [])
+    import re
 
-    analysis = {
+    streams = log_data.get("data", {}).get("result", [])
+    analysis: dict[str, Any] = {
         "request_traces": [],
         "trace_count": 0,
         "correlation_ids": set(),
         "summary": "Request trace analysis completed.",
     }
-
-    # Look for correlation IDs and request patterns
-    correlation_patterns = [
+    patterns = [
         r"request.?id[:=]\s*([a-f0-9\-]+)",
         r"trace.?id[:=]\s*([a-f0-9\-]+)",
         r"correlation.?id[:=]\s*([a-f0-9\-]+)",
         r"x-request-id[:=]\s*([a-f0-9\-]+)",
     ]
-
-    import re
-
     for stream in streams:
-        values = stream.get("values", [])
         trace_entries = []
-
-        for timestamp, message in values:
-            for pattern in correlation_patterns:
+        for timestamp, message in stream.get("values", []):
+            for pattern in patterns:
                 matches = re.findall(pattern, message, re.IGNORECASE)
                 if matches:
                     analysis["correlation_ids"].update(matches)
                     trace_entries.append({"timestamp": timestamp, "message": message, "correlation_ids": matches})
-
         if trace_entries:
             analysis["request_traces"].append(
-                {
-                    "stream_labels": stream.get("stream", {}),
-                    "entries": trace_entries,
-                    "entry_count": len(trace_entries),
-                }
+                {"stream_labels": stream.get("stream", {}), "entries": trace_entries, "entry_count": len(trace_entries)}
             )
-
     analysis["trace_count"] = len(analysis["request_traces"])
     analysis["unique_correlation_ids"] = len(analysis["correlation_ids"])
-
-    if analysis["trace_count"] == 0:
-        analysis["summary"] = "No request traces found in the log sample."
-    else:
-        analysis["summary"] = (
-            f"Found {analysis['trace_count']} request trace{'s' if analysis['trace_count'] != 1 else ''} with {analysis['unique_correlation_ids']} unique correlation ID{'s' if analysis['unique_correlation_ids'] != 1 else ''}."
-        )
-
+    analysis["correlation_ids"] = list(analysis["correlation_ids"])
+    analysis["summary"] = (
+        f"Found {analysis['trace_count']} traces with {analysis['unique_correlation_ids']} correlation IDs."
+        if analysis["trace_count"]
+        else "No request traces found."
+    )
     return analysis

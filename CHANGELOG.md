@@ -1,3 +1,32 @@
+
+## [Unreleased]
+
+### Fixed
+- Loki `tail_logs` uses WebSocket with query_range fallback (was broken HTTP GET)
+- Prometheus `get_target_health` matches job/instance/URL (was wrongly filtering `__name__`)
+- `run()` respects CLI/`MCP_TRANSPORT` via `parse_known_args` (no longer hardcodes `--stdio`)
+- Encryption key persists under storage path instead of regenerating every process
+- Docker Compose defaults to host gateway URLs; optional `--profile stack`
+- Dockerfile uses `uv sync` (fleet standard)
+
+### Added
+- Wired response cache, result sampling, and loky parallel analysis helpers
+- Prometheus/Loki auth headers; Alertmanager silences; Grafana unified alert rule CRUD
+- Implemented previously stubbed Grafana/Prom/Loki/correlation/status operations
+- Podman compose docs (`docs/PODMAN.md`); `websockets` dependency
+- Unit tests for utils, sampling, target matching, and tool execute paths
+- Expanded mocked coverage suite (~74% line coverage; gate raised to 50%)
+- Documentation refresh (README, INSTALL, DEVELOPMENT, CONFIGURATION, TROUBLESHOOTING, AGENTS/CLAUDE, llms.txt / llms-full.txt, Podman)
+
+## [Unreleased] — 2026-06-14
+
+### Added
+- Tauri 2.0 native wrapper with `bundle.resources` + `std::process::Command`
+- PyInstaller frozen backend embedded in NSIS installer
+- CUA-NSIS smoke test (`scripts/cua-smoke.py`, `scripts/cua-nsis-config.json`)
+- `just cua-nsis-test` recipe
+- Tauri CORS: `tauri://localhost` origins for WebView API access
+- `GET /api/v1/diagnostics` endpoint for CUA verification
 # Changelog
 
 All notable changes to the Monitoring MCP will be documented in this file.
@@ -165,3 +194,4 @@ When contributing to this project, please:
 6. Announce release
 
 For more information, see [CONTRIBUTING.md](CONTRIBUTING.md).
+

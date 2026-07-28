@@ -98,14 +98,20 @@ class MonitoringMCPServer:
 
         logger.info("All monitoring tools registered successfully")
 
-    async def run(self) -> None:
-        """Main entry point for the Monitoring Hub MCP server."""
-        # Initialize storage if needed
+    async def run(self, argv: list[str] | None = None) -> None:
+        """Main entry point — respects CLI args and MCP_TRANSPORT env.
+
+        Uses parse_known_args so embedding (e.g. tests) does not choke on
+        foreign argv entries. Pass ``argv`` explicitly to override.
+        """
         await self.storage.setup()
 
         try:
             parser = create_argument_parser("monitoring-mcp")
-            args = parser.parse_args(["--stdio"])
+            if argv is not None:
+                args = parser.parse_args(argv)
+            else:
+                args, _unknown = parser.parse_known_args()
             await run_server_async(self.mcp, args=args, server_name="monitoring-mcp")
         finally:
             await self._cleanup()

@@ -1,15 +1,21 @@
 # monitoring-mcp — Claude Code Guide
 
 ## Overview
-FastMCP 3.1.0-powered monitoring server for Grafana, Prometheus, and Loki
+
+FastMCP **3.4.4+** monitoring MCP for Grafana, Prometheus, Loki, and Alertmanager.
 
 ## Standards
-- FastMCP 3.2+ portmanteau tool pattern — tools use `operation` enum param
-- Responses: structured dicts with `success`, `message`, domain-specific fields
-- Dual transport: stdio (Claude Desktop) + HTTP (`MCP_TRANSPORT=http`)
-- See [mcp-central-docs](https://github.com/sandraschi/mcp-central-docs) for fleet-wide coding standards
+
+- Portmanteau tools with `operation` enum — full list in [docs/TOOLS.md](docs/TOOLS.md)
+- Responses: structured dicts with `success`, `conversational_summary`, domain fields
+- Dual transport: stdio (Claude Desktop) + HTTP (`MCP_TRANSPORT=http` / `--http`)
+- Env prefix: `MONITORING_MCP_*` — see [docs/CONFIGURATION.md](docs/CONFIGURATION.md)
+- Fleet standards: [mcp-central-docs](https://github.com/sandraschi/mcp-central-docs)
 
 ## Key Files
-- `README.md` — full documentation
-- `pyproject.toml` — build config and entry points
-- `AGENTS.md` — OpenAI Codex agent context (if present)
+
+- `README.md` — overview
+- `docs/TOOLS.md` — operations
+- `docs/PODMAN.md` — containers
+- `pyproject.toml` — deps / coverage gate (50%)
+- `AGENTS.md` — agent-oriented twin of this file

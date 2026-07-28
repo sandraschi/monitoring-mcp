@@ -137,7 +137,7 @@ class TestMonitoringMCPServer:
 
             # Run the server - expect the error to propagate
             with pytest.raises(RuntimeError, match="Server stopped"):
-                await server.run()
+                await server.run(argv=["--stdio"])
 
             # Verify initialization was called
             mock_store.setup.assert_called_once()
@@ -231,5 +231,5 @@ class TestMonitoringMCPIntegration:
             patch.object(server, "_cleanup", new_callable=AsyncMock) as mock_cleanup,
         ):
             with pytest.raises(RuntimeError, match="Server stopped"):
-                await server.run()
+                await server.run(argv=["--stdio"])
             mock_cleanup.assert_called_once()

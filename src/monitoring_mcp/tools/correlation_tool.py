@@ -286,19 +286,150 @@ async def _execute_correlation_operation(
             "time_range": time_range,
         }
 
-    # Placeholder implementations for remaining operations
-    elif operation in [
-        "anomaly_correlation",
-        "service_dependency_map",
-        "impact_analysis",
-        "predictive_insights",
-        "bottleneck_detection",
-    ]:
+    elif operation == "anomaly_correlation":
+        start_time = time_range.get("start", "now-1h")
+        end_time = time_range.get("end", "now")
+        metrics_data = await prometheus_client.query_range(
+            metric_query or 'rate(http_requests_total{status=~"5.."}[5m])', start_time, end_time
+        )
+        logs_data = await loki_client.query_range(
+            log_query or '{job=~".*"} |= "ERROR"', start_time, end_time
+        )
+        metric_series = len(metrics_data.get("data", {}).get("result", []))
+        log_streams = len(logs_data.get("data", {}).get("result", []))
         return {
-            "success": False,
-            "operation": operation,
-            "error": f"Operation '{operation}' is not yet implemented",
-            "note": "This operation is planned for a future version",
+            "success": True,
+            "operation": "anomaly_correlation",
+            "correlation": {
+                "metric_anomaly_series": metric_series,
+                "error_log_streams": log_streams,
+                "linked": metric_series > 0 and log_streams > 0,
+                "insights": [
+                    "Metric spikes with concurrent error logs suggest application faults"
+                    if metric_series and log_streams
+                    else "No strong metric/log anomaly link in this window"
+                ],
+            },
+            "time_range": time_range,
+        }
+
+    elif operation == "service_dependency_map":
+        start_time = time_range.get("start", "now-1h")
+        end_time = time_range.get("end", "now")
+        targets = await prometheus_client.targets()
+        active = targets.get("data", {}).get("activeTargets", [])
+        jobs = sorted({(t.get("labels") or {}).get("job", "unknown") for t in active})
+        up_data = await prometheus_client.query_range(
+            metric_query or "up", start_time, end_time, step="1m"
+        )
+        series = up_data.get("data", {}).get("result", [])
+        edges = []
+        for s in series:
+            job = (s.get("metric") or {}).get("job")
+            instance = (s.get("metric") or {}).get("instance")
+            if job and instance:
+                edges.append({"from": job, "to": instance, "type": "scrape"})
+        return {
+            "success": True,
+            "operation": "service_dependency_map",
+            "map": {"jobs": jobs, "edges": edges[:200], "target_count": len(active)},
+            "time_range": time_range,
+            "note": "Built from Prometheus scrape topology; enrich with service mesh metrics when available",
+        }
+
+    elif operation == "impact_analysis":
+        start_time = time_range.get("start", "now-1h")
+        end_time = time_range.get("end", "now")
+        error_metrics = await prometheus_client.query_range(
+            metric_query or 'sum(rate(http_requests_total{status=~"5.."}[5m]))', start_time, end_time
+        )
+        error_logs = await loki_client.query_range(
+            log_query or '{job=~".*"} |= "ERROR"', start_time, end_time, limit=200
+        )
+        affected = set()
+        for stream in error_logs.get("data", {}).get("result", []):
+            job = (stream.get("stream") or {}).get("job")
+            if job:
+                affected.add(job)
+        return {
+            "success": True,
+            "operation": "impact_analysis",
+            "impact": {
+                "incident": incident_description or "unspecified",
+                "error_metric_series": len(error_metrics.get("data", {}).get("result", [])),
+                "affected_services": sorted(affected),
+                "severity": "high" if len(affected) > 3 else "medium" if affected else "low",
+            },
+            "time_range": time_range,
+        }
+
+    elif operation == "predictive_insights":
+        start_time = time_range.get("start", "now-6h")
+        end_time = time_range.get("end", "now")
+        data = await prometheus_client.query_range(
+            metric_query or "up", start_time, end_time, step="5m"
+        )
+        trends = []
+        for series in data.get("data", {}).get("result", [])[:20]:
+            values = series.get("values") or []
+            if len(values) < 3:
+                continue
+            try:
+                first = float(values[0][1])
+                last = float(values[-1][1])
+            except (TypeError, ValueError, IndexError):
+                continue
+            delta = last - first
+            trends.append(
+                {
+                    "metric": series.get("metric", {}),
+                    "delta": delta,
+                    "direction": "up" if delta > 0 else "down" if delta < 0 else "flat",
+                }
+            )
+        rising = sum(1 for t in trends if t["direction"] == "up")
+        return {
+            "success": True,
+            "operation": "predictive_insights",
+            "insights": {
+                "series_analyzed": len(trends),
+                "rising": rising,
+                "falling": sum(1 for t in trends if t["direction"] == "down"),
+                "forecast_note": "Heuristic trend from recent window — not a statistical forecast",
+                "trends": trends[:20],
+            },
+            "time_range": time_range,
+        }
+
+    elif operation == "bottleneck_detection":
+        start_time = time_range.get("start", "now-1h")
+        end_time = time_range.get("end", "now")
+        latency = await prometheus_client.query_range(
+            metric_query
+            or "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job))",
+            start_time,
+            end_time,
+        )
+        slow_logs = await loki_client.query_range(
+            log_query or '{job=~".*"} |~ "(?i)slow|timeout|latency"', start_time, end_time, limit=100
+        )
+        bottlenecks = []
+        for series in latency.get("data", {}).get("result", []):
+            values = series.get("values") or []
+            if not values:
+                continue
+            try:
+                latest = float(values[-1][1])
+            except (TypeError, ValueError, IndexError):
+                continue
+            if latest > 1.0:
+                bottlenecks.append({"metric": series.get("metric", {}), "p95_seconds": latest})
+        return {
+            "success": True,
+            "operation": "bottleneck_detection",
+            "bottlenecks": bottlenecks[:50],
+            "slow_log_streams": len(slow_logs.get("data", {}).get("result", [])),
+            "time_range": time_range,
         }
 
     else:
