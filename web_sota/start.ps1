@@ -1,84 +1,37 @@
-Param([switch]$Headless)
-$SkipFrontend = $Headless
+﻿# Fleet unified launcher - do not edit logic here.
+# Change fleet-start.config.ps1 at the repo root instead.
+param(
+    [switch]$Headless,
+    [switch]$BackendOnly,
+    [switch]$FrontendOnly,
+    [switch]$NoBrowser,
+    [switch]$ReuseIfRunning
+)
 
-# --- SOTA Headless Standard ---
-if ($Headless -and ($Host.UI.RawUI.WindowTitle -notmatch 'Hidden')) {
-    Start-Process pwsh -ArgumentList '-NoProfile', '-File', $PSCommandPath, '-Headless' -WindowStyle Hidden
-    exit
-}
-$WindowStyle = if ($Headless) { 'Hidden' } else { 'Normal' }
-# ------------------------------
-
-# Webapp Start - Standardized SOTA (Auto-Repaired V2.5)
-$WebPort = 10850
-$BackendPort = 10851
-$FleetStartPath = Join-Path $ProjectRoot "scripts\FleetStartMode.ps1"
-if (-not (Test-Path -LiteralPath $FleetStartPath)) {
-    Write-Host "ERROR: Missing vendored launcher helper: $FleetStartPath" -ForegroundColor Red
+$ErrorActionPreference = 'Stop'
+$ReposRoot = if ($env:FLEET_REPOS_ROOT) { $env:FLEET_REPOS_ROOT } else { 'D:\Dev\repos' }
+$EnginePath = Join-Path $ReposRoot 'mcp-central-docs\scripts\Invoke-FleetWebappStart.ps1'
+if (-not (Test-Path -LiteralPath $EnginePath)) {
+    Write-Host "ERROR: Missing fleet start engine: $EnginePath" -ForegroundColor Red
     exit 1
 }
-. $FleetStartPath
+. $EnginePath
 
-$ProjectRoot = Split-Path -Parent $PSScriptRoot
-
-# 1. Kill any process squatting on the ports
-Write-Host "Checking for port squatters on $WebPort and $BackendPort..." -ForegroundColor Yellow
-$pids = Get-NetTCPConnection -LocalPort $WebPort, $BackendPort -ErrorAction SilentlyContinue | Where-Object { $_.OwningProcess -gt 4 } | Select-Object -ExpandProperty OwningProcess -Unique
-foreach ($p in $pids) {
-    Write-Host "Found squatter (PID: $p). Terminating..." -ForegroundColor Red
-    try { Stop-Process -Id $p -Force -ErrorAction Stop } catch { Write-Host "Warning: Could not terminate PID $p." -ForegroundColor Gray }
-}
-
-# 2. Setup
-Set-Location $PSScriptRoot
-if (-not (Test-Path "node_modules")) { npm install }
-
-# Sync Python deps
-Push-Location $ProjectRoot
-uv sync
-Pop-Location
-
-# 3. Start the Python backend (Background)
-Write-Host "Starting Python backend on port $BackendPort ..." -ForegroundColor Cyan
-
-# Use TRIPLE backtick to ensure $env:PYTHONPATH reaches the REAL shell
-$srcPath = Join-Path $ProjectRoot "src"
-$backendCmd = "`$env:PYTHONPATH = '$srcPath;$PSScriptRoot'; Set-Location '$PSScriptRoot'; uv run uvicorn monitoring_mcp.server:app --host 127.0.0.1 --port $BackendPort --log-level info"
-
-Start-Process powershell -ArgumentList "-NoExit", "-Command", $backendCmd -WindowStyle Normal
-
-# Wait for backend health
-Write-Host "Waiting for backend (port $BackendPort)..." -ForegroundColor Gray
-$healthUrl = "http://127.0.0.1:$BackendPort/health"
-$maxAttempts = 30
-$backendUp = $false
-for ($i = 0; $i -lt $maxAttempts; $i++) {
-    try {
-        $null = Invoke-WebRequest -Uri $healthUrl -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop
-        $backendUp = $true
+$configCandidates = @(
+    (Join-Path $PSScriptRoot 'fleet-start.config.ps1'),
+    (Join-Path (Split-Path -Parent $PSScriptRoot) 'fleet-start.config.ps1')
+)
+$configPath = $null
+foreach ($candidate in $configCandidates) {
+    if (Test-Path -LiteralPath $candidate) {
+        $configPath = $candidate
         break
-    } catch {
-        Start-Sleep -Seconds 1
     }
 }
-if ($backendUp) {
-    Write-Host "Backend on port $BackendPort is healthy." -ForegroundColor Green
-} else {
-    Write-Host "Backend on port $BackendPort did not respond within ${maxAttempts}s." -ForegroundColor Yellow
+if (-not $configPath) {
+    Write-Host 'ERROR: Missing fleet-start.config.ps1 (repo root or beside start.ps1).' -ForegroundColor Red
+    exit 1
 }
 
-# 4. Run server (Vite dev)
-Write-Host "Starting Vite frontend on port $WebPort ..." -ForegroundColor Green
-
-# 4b. Launch background task to open browser once frontend is ready (Auto-opened by Antigravity)
-$frontendUrl = "http://127.0.0.1:$WebPort/"
-$pollAndOpen = "for (`$i = 0; `$i -lt 60; `$i++) { try { `$null = Invoke-WebRequest -Uri '$frontendUrl' -TimeoutSec 2 -UseBasicParsing -ErrorAction Stop; Start-Process '$frontendUrl'; exit } catch { Start-Sleep -Seconds 1 } }"
-Start-Process powershell -ArgumentList "-NoProfile", "-WindowStyle", "Hidden", "-Command", $pollAndOpen
-
-Write-Host "Browser will open automatically when Vite is ready." -ForegroundColor Gray
-if ($SkipFrontend) { return }
-npm run dev -- --port $WebPort --host
-
-
-
+Start-FleetWebapp @PSBoundParameters -ConfigPath $configPath -LauncherRoot $PSScriptRoot
 
