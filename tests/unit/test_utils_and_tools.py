@@ -97,7 +97,10 @@ class TestPrometheusOps:
             enable_cache=False,
         )
         client = PrometheusClient(cfg)
-        big = {"status": "success", "data": {"resultType": "vector", "result": [{"metric": {"i": str(i)}} for i in range(20)]}}
+        big = {
+            "status": "success",
+            "data": {"resultType": "vector", "result": [{"metric": {"i": str(i)}} for i in range(20)]},
+        }
         client.query = AsyncMock(return_value=big)
         result = await _execute_prometheus_operation(client, "query_metrics", query="up")
         assert result["success"] is True

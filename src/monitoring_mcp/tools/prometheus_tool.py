@@ -463,8 +463,7 @@ async def _execute_prometheus_operation(
     if operation == "silence_alert":
         if not silence_data:
             raise ValueError(
-                "silence_data is required for silence_alert "
-                "(matchers, startsAt, endsAt, createdBy, comment)"
+                "silence_data is required for silence_alert (matchers, startsAt, endsAt, createdBy, comment)"
             )
         created = await client._am_request("POST", "silences", json_body=silence_data)
         return {"success": True, "operation": "silence_alert", "data": created}
@@ -550,7 +549,9 @@ def _generate_prometheus_summary(operation: str, result: dict[str, Any]) -> str:
         return f"{healthy}/{total} scrape targets are healthy."
     if operation == "get_target_health":
         summary = result.get("health_summary", {})
-        return f"Target health: {summary.get('up', 0)} up, {summary.get('down', 0)} down (of {summary.get('total', 0)})."
+        return (
+            f"Target health: {summary.get('up', 0)} up, {summary.get('down', 0)} down (of {summary.get('total', 0)})."
+        )
     if operation == "list_alerts":
         summary = result.get("alert_summary", {})
         return f"{summary.get('firing', 0)} firing / {summary.get('total', 0)} total alerts."

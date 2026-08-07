@@ -249,8 +249,7 @@ def register_grafana_tool(
                 "success": False,
                 "error": str(e),
                 "conversational_summary": (
-                    f"Failed to {operation.replace('_', ' ')}. "
-                    "Check Grafana URL and credentials."
+                    f"Failed to {operation.replace('_', ' ')}. Check Grafana URL and credentials."
                 ),
             }
 

@@ -292,9 +292,7 @@ async def _execute_correlation_operation(
         metrics_data = await prometheus_client.query_range(
             metric_query or 'rate(http_requests_total{status=~"5.."}[5m])', start_time, end_time
         )
-        logs_data = await loki_client.query_range(
-            log_query or '{job=~".*"} |= "ERROR"', start_time, end_time
-        )
+        logs_data = await loki_client.query_range(log_query or '{job=~".*"} |= "ERROR"', start_time, end_time)
         metric_series = len(metrics_data.get("data", {}).get("result", []))
         log_streams = len(logs_data.get("data", {}).get("result", []))
         return {
@@ -319,9 +317,7 @@ async def _execute_correlation_operation(
         targets = await prometheus_client.targets()
         active = targets.get("data", {}).get("activeTargets", [])
         jobs = sorted({(t.get("labels") or {}).get("job", "unknown") for t in active})
-        up_data = await prometheus_client.query_range(
-            metric_query or "up", start_time, end_time, step="1m"
-        )
+        up_data = await prometheus_client.query_range(metric_query or "up", start_time, end_time, step="1m")
         series = up_data.get("data", {}).get("result", [])
         edges = []
         for s in series:
@@ -366,9 +362,7 @@ async def _execute_correlation_operation(
     elif operation == "predictive_insights":
         start_time = time_range.get("start", "now-6h")
         end_time = time_range.get("end", "now")
-        data = await prometheus_client.query_range(
-            metric_query or "up", start_time, end_time, step="5m"
-        )
+        data = await prometheus_client.query_range(metric_query or "up", start_time, end_time, step="5m")
         trends = []
         for series in data.get("data", {}).get("result", [])[:20]:
             values = series.get("values") or []

@@ -845,6 +845,7 @@ async def _check_alert_status(
 
     return alert_status
 
+
 async def _check_storage_status(
     grafana_client,
     prometheus_client,
@@ -902,9 +903,7 @@ async def _check_backup_status(
     retention = None
     flag_data = flags.get("data", flags) if isinstance(flags, dict) else {}
     if isinstance(flag_data, dict):
-        retention = flag_data.get("storage.tsdb.retention.time") or flag_data.get(
-            "storage.tsdb.retention"
-        )
+        retention = flag_data.get("storage.tsdb.retention.time") or flag_data.get("storage.tsdb.retention")
     snapshot_note = seal_payload(
         {"checked": True, "retention": retention},
         config.encryption_key or "unset",

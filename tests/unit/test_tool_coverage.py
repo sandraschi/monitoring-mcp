@@ -256,13 +256,9 @@ def test_prometheus_helpers():
     assert _analyze_query_performance("sum(rate(x[5m]))")
     assert _analyze_query_performance("up")
     assert _series_stats({"metric": {"a": "b"}, "value": ["1", "0"]})["points"] == 1
-    insights = _generate_prometheus_insights(
-        "list_targets", {"healthy_targets": 1, "target_count": 10}
-    )
+    insights = _generate_prometheus_insights("list_targets", {"healthy_targets": 1, "target_count": 10})
     assert insights["recommendations"]
-    insights2 = _generate_prometheus_insights(
-        "list_alerts", {"alert_summary": {"firing": 9}}
-    )
+    insights2 = _generate_prometheus_insights("list_alerts", {"alert_summary": {"firing": 9}})
     assert insights2["alerting_opportunities"]
     insights3 = _generate_prometheus_insights("query_metrics", {"result_count": 0})
     assert insights3["optimization_suggestions"]
@@ -277,7 +273,9 @@ async def test_prometheus_http_helpers(cfg: MonitoringConfig):
     mock_resp.json.return_value = {"status": "success", "data": {}}
     mock_resp.content = b"{}"
     mock_cm = MagicMock()
-    mock_cm.__aenter__ = AsyncMock(return_value=MagicMock(get=AsyncMock(return_value=mock_resp), request=AsyncMock(return_value=mock_resp)))
+    mock_cm.__aenter__ = AsyncMock(
+        return_value=MagicMock(get=AsyncMock(return_value=mock_resp), request=AsyncMock(return_value=mock_resp))
+    )
     mock_cm.__aexit__ = AsyncMock(return_value=None)
     with patch("monitoring_mcp.tools.prometheus_tool.httpx.AsyncClient", return_value=mock_cm):
         assert await client._make_request("query", {"query": "up"}, use_cache=True)
@@ -492,9 +490,7 @@ async def test_status_all_ops(prom_client, loki_client, grafana_client, cfg):
     prom_client._make_request = AsyncMock(return_value={"data": {"headStats": {}}})
 
     for op in ops:
-        result = await _execute_status_operation(
-            op, grafana_client, prom_client, loki_client, cfg, None, True, False
-        )
+        result = await _execute_status_operation(op, grafana_client, prom_client, loki_client, cfg, None, True, False)
         assert result["success"] is True, (op, result)
         _generate_status_summary(op, result)
         _generate_status_insights(op, result)

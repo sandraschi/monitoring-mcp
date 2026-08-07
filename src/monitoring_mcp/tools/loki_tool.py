@@ -403,7 +403,13 @@ async def _execute_loki_operation(
     if operation == "get_labels":
         result = await client.labels()
         labels = result.get("data", [])
-        return {"success": True, "operation": "get_labels", "data": result, "label_count": len(labels), "labels": labels}
+        return {
+            "success": True,
+            "operation": "get_labels",
+            "data": result,
+            "label_count": len(labels),
+            "labels": labels,
+        }
 
     if operation == "get_label_values":
         if not label_name:
@@ -428,9 +434,7 @@ async def _execute_loki_operation(
     if operation in ["analyze_logs", "detect_anomalies", "search_errors"]:
         if not query:
             raise ValueError(f"query is required for {operation}")
-        result = await client.query_range(
-            query, start_time or "now-1h", end_time or "now", limit=min(limit, 1000)
-        )
+        result = await client.query_range(query, start_time or "now-1h", end_time or "now", limit=min(limit, 1000))
         if operation == "analyze_logs":
             analysis = _analyze_log_patterns(result, analysis_context or {})
         elif operation == "detect_anomalies":
@@ -449,9 +453,7 @@ async def _execute_loki_operation(
         if not query:
             raise ValueError("query is required for trace_requests")
         trace_query = f'{query} |~ "(?i)request.?id|trace.?id|correlation.?id|x-request-id"'
-        result = await client.query_range(
-            trace_query, start_time or "now-1h", end_time or "now", limit=min(limit, 500)
-        )
+        result = await client.query_range(trace_query, start_time or "now-1h", end_time or "now", limit=min(limit, 500))
         return {
             "success": True,
             "operation": "trace_requests",
@@ -508,9 +510,7 @@ async def _execute_loki_operation(
     if operation == "compare_timeframes":
         if not query:
             raise ValueError("query is required for compare_timeframes")
-        primary = await client.query_range(
-            query, start_time or "now-1h", end_time or "now", limit=min(limit, 500)
-        )
+        primary = await client.query_range(query, start_time or "now-1h", end_time or "now", limit=min(limit, 500))
         secondary = await client.query_range(
             query,
             compare_start or "now-2h",
@@ -528,9 +528,7 @@ async def _execute_loki_operation(
     if operation == "generate_report":
         if not query:
             raise ValueError("query is required for generate_report")
-        result = await client.query_range(
-            query, start_time or "now-1h", end_time or "now", limit=min(limit, 1000)
-        )
+        result = await client.query_range(query, start_time or "now-1h", end_time or "now", limit=min(limit, 1000))
         patterns = _analyze_log_patterns(result, analysis_context or {})
         anomalies = _detect_log_anomalies(result, analysis_context or {})
         errors = _search_error_patterns(result, analysis_context or {})
@@ -561,7 +559,7 @@ def _optimize_logql(query: str) -> list[dict[str, str]]:
             {
                 "type": "unbounded_selector",
                 "description": "Empty stream selector scans all streams",
-                "suggestion": "Add label matchers e.g. {job=\"api\"}",
+                "suggestion": 'Add label matchers e.g. {job="api"}',
             }
         )
     if "|=" in query and "|~" in query:
@@ -652,7 +650,9 @@ def _analyze_log_patterns(log_data: dict[str, Any], _context: dict[str, Any]) ->
     error_patterns = ["ERROR", "Exception", "Failed", "Timeout", "Connection refused"]
     error_count = sum(1 for msg in all_messages if any(p.lower() in msg.lower() for p in error_patterns))
     if error_count:
-        analysis["patterns"].append({"type": "errors", "count": error_count, "description": f"{error_count} error-like messages"})
+        analysis["patterns"].append(
+            {"type": "errors", "count": error_count, "description": f"{error_count} error-like messages"}
+        )
     if analysis["patterns"]:
         analysis["summary"] = f"Identified {len(analysis['patterns'])} log patterns."
     else:
@@ -683,7 +683,12 @@ def _detect_log_anomalies(log_data: dict[str, Any], _context: dict[str, Any]) ->
 
 def _search_error_patterns(log_data: dict[str, Any], _context: dict[str, Any]) -> dict[str, Any]:
     streams = log_data.get("data", {}).get("result", [])
-    analysis: dict[str, Any] = {"error_count": 0, "error_types": {}, "error_samples": [], "summary": "Error search completed."}
+    analysis: dict[str, Any] = {
+        "error_count": 0,
+        "error_types": {},
+        "error_samples": [],
+        "summary": "Error search completed.",
+    }
     keywords = ["ERROR", "Exception", "Failed", "Timeout", "Connection refused", "500", "502", "503"]
     for stream in streams:
         for timestamp, message in stream.get("values", []):
@@ -694,9 +699,7 @@ def _search_error_patterns(log_data: dict[str, Any], _context: dict[str, Any]) -
                         {"timestamp": timestamp, "message": message[:200], "stream_labels": stream.get("stream", {})}
                     )
     analysis["summary"] = (
-        f"Found {analysis['error_count']} error messages."
-        if analysis["error_count"]
-        else "No error messages found."
+        f"Found {analysis['error_count']} error messages." if analysis["error_count"] else "No error messages found."
     )
     return analysis
 
