@@ -34,7 +34,6 @@ logger = logging.getLogger(__name__)
 mcp = FastMCP(
     name="monitoring-mcp",
     version="0.1.0",
-    description="Intelligent monitoring operations for Grafana, Prometheus, and Loki",
     instructions="""
     You are an expert monitoring assistant with deep knowledge of Grafana, Prometheus, and Loki.
     Provide conversational, actionable responses that help users understand their monitoring data.
