@@ -389,7 +389,7 @@ async def _execute_correlation_operation(
                 "series_analyzed": len(trends),
                 "rising": rising,
                 "falling": sum(1 for t in trends if t["direction"] == "down"),
-                "forecast_note": "Heuristic trend from recent window — not a statistical forecast",
+                "forecast_note": "Heuristic trend from recent window - not a statistical forecast",
                 "trends": trends[:20],
             },
             "time_range": time_range,

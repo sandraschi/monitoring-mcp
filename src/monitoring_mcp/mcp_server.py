@@ -99,7 +99,7 @@ class MonitoringMCPServer:
         logger.info("All monitoring tools registered successfully")
 
     async def run(self, argv: list[str] | None = None) -> None:
-        """Main entry point — respects CLI args and MCP_TRANSPORT env.
+        """Main entry point - respects CLI args and MCP_TRANSPORT env.
 
         Uses parse_known_args so embedding (e.g. tests) does not choke on
         foreign argv entries. Pass ``argv`` explicitly to override.

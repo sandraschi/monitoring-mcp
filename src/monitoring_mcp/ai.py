@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class AIRouter:
-    """AI router for monitoring MCP — calls Ollama / LM Studio for real responses."""
+    """AI router for monitoring MCP - calls Ollama / LM Studio for real responses."""
 
     def __init__(self, mcp_app: FastMCP):
         self.mcp = mcp_app

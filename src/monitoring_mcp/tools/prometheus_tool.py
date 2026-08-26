@@ -658,7 +658,7 @@ def _analyze_query_performance(query: str) -> list[dict[str, str]]:
         optimizations.append(
             {
                 "type": "complex_query",
-                "description": "Complex query — consider recording rules",
+                "description": "Complex query - consider recording rules",
                 "suggestion": "Create recording rules for repeated expressions",
             }
         )

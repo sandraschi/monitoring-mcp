@@ -16,9 +16,16 @@ if str(base / "src") not in sys.path:
 os.environ.setdefault("MCP_TRANSPORT", "http")
 
 if __name__ == "__main__":
+    import uvicorn
+
     from monitoring_mcp.server import app
 
     host = os.environ.get("MONITORING_HOST", "127.0.0.1")
-    port = int(os.environ.get("MONITORING_PORT", os.environ.get("MCP_PORT", "12007")))
+    # backend.rs sets PORT=<BACKEND_PORT>; bind that so the webview health check passes.
+    port = int(
+        os.environ.get("MONITORING_PORT")
+        or os.environ.get("MCP_PORT")
+        or os.environ.get("PORT", "12007")
+    )
     log_level = os.environ.get("MONITORING_LOG_LEVEL", "info")
     uvicorn.run(app, host=host, port=port, log_level=log_level)
