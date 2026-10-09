@@ -39,7 +39,9 @@ dependencies = [
     "urllib3>=2.0.0",
     "psutil>=5.9.0",
     "fastapi>=0.138.1",
+    "uvicorn[standard]>=0.34",
     "websockets>=16.0",
+    "prefab-ui>=0.18.0",
 ]
 
 [project.optional-dependencies]
@@ -166,8 +168,12 @@ line-length = 120
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "B", "S", "UP", "RUF"]
-ignore = ["S101", "B008", "E501", "S106", "S110", "S112", "S101", "B008", "E501", "S106", "S110", "S112", "RUF012", "S603", "S607", "S324", "E402"]
+select = ["E", "F", "W", "I", "B", "S", "T20", "UP", "RUF"]
+ignore = ["S101", "B008", "E501", "S106", "RUF012", "S603", "S607", "S324", "E402"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*" = ["S101", "T20"]
+"scripts/**/*" = ["T20", "S603", "S607"]
 
 [tool.ruff.format]
 quote-style = "double"

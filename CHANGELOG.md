@@ -1,4 +1,16 @@
 
+## [Unreleased] — 2026-10-09 (assfix)
+
+### Fixed
+- MCPB manifest: `${PWD}` -> `${__dirname}`, stdio entry `python -m monitoring_mcp`
+  (was HTTP sidecar via uv; description 3.1.0 -> 3.4+)
+- Ruff config: dropped S110/S112 ignores, enabled T20 print-ban + per-file-ignores
+- justfile: added test/fmt-check/mcpb-pack recipes; joined multi-line recipes (just
+  runs each line as a separate shell — bare Set-Location lines never applied)
+- CI: push/PR triggers, checkout@v6 + setup-python@v6, format check, Node 22 + Biome job
+- Restored scripts/mcpb-pack.ps1 fleet shim; .gitignore covers reports/*.mcpb/*.bak
+- Removed tracked .bak dross; materialised pre-commit hook
+
 ## [0.1.0] - 2026-08-17
 
 ### Fixed

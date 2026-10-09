@@ -2,16 +2,16 @@
   "manifest_version": "0.2",
   "name": "monitoring-mcp",
   "version": "0.1.0",
-  "description": "FastMCP 3.1.0-powered monitoring server for Grafana, Prometheus, and Loki",
+  "description": "FastMCP 3.4+-powered monitoring server for Grafana, Prometheus, and Loki",
   "author": { "name": "sandraschi" },
   "server": {
     "type": "python",
-    "entry_point": "run_server.py",
+    "entry_point": "src/monitoring_mcp/__main__.py",
     "mcp_config": {
-      "command": "uv",
-      "args": ["run","--directory","${PWD}","run_server.py"],
+      "command": "python",
+      "args": ["-m", "monitoring_mcp"],
       "env": {
-        "PYTHONPATH": "${PWD}/src",
+        "PYTHONPATH": "${__dirname}/src",
         "PYTHONUNBUFFERED": "1"
       }
     }

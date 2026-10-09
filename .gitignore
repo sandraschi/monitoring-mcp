@@ -180,3 +180,13 @@ _dashboard/
 # on every pack. Never hand-edit, never commit.
 mcpb/src/
 
+# MCPB distributables (built by mcpb/pack.ps1, attached to releases)
+*.mcpb
+
+# Fleet batch-edit safety backups (Batch Mutation Safety rule)
+*.bak
+*.bak.*
+
+# Assfix working snapshots (regenerable; committed copy lives in docs/assess-reports/)
+reports/
+
