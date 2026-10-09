@@ -2,7 +2,9 @@ name: CI
 
 on:
   push:
-    tags: ["v*"]
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
   workflow_dispatch:
 
 jobs:
@@ -13,10 +15,10 @@ jobs:
         python-version: ["3.12", "3.13"]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -29,5 +31,29 @@ jobs:
     - name: Lint with ruff
       run: uv run ruff check .
 
+    - name: Check formatting
+      run: uv run ruff format . --check
+
     - name: Run tests
       run: uv run --extra dev pytest -x --tb=short -k "not slow"
+
+  webapp:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: web_sota
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Set up Node 22
+      uses: actions/setup-node@v4
+      with:
+        node-version: "22"
+        cache: npm
+        cache-dependency-path: web_sota/package-lock.json
+
+    - name: Install web deps
+      run: npm ci
+
+    - name: Lint with Biome
+      run: npm run biome:ci

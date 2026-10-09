@@ -48,7 +48,7 @@ def setup_webapp(app: FastAPI, mcp_app: FastMCP):
                     data = r.json()
                     providers["lm_studio"] = [{"name": m["id"]} for m in data.get("data", [])]
         except Exception:
-            pass
+            logger.debug("LM Studio not reachable at 127.0.0.1:1234", exc_info=True)
         return providers
 
     @app.get("/api/health")
