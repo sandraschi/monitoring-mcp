@@ -2,8 +2,6 @@
 ASGI entry point for uvicorn (web_sota backend).
 """
 
-import os
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -21,7 +19,6 @@ app = FastAPI(
 # Register REST routes
 setup_webapp(app, mcp_app=mcp)
 
-_tauri = os.environ.get("MONITORING_MCP_TAURI", "").lower() in ("1", "true", "yes")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -33,7 +30,7 @@ app.add_middleware(
         "http://tauri.localhost",
         "https://tauri.localhost",
     ],
-    allow_origin_regex=r"https?://tauri\.localhost(:\d+)?" if _tauri else None,
+    allow_origin_regex=r"https?://tauri\.localhost(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

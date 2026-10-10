@@ -23,6 +23,7 @@ from .tools.correlation_tool import register_correlation_tool
 from .tools.grafana_tool import register_grafana_tool
 from .tools.loki_tool import register_loki_tool
 from .tools.prometheus_tool import register_prometheus_tool
+from .tools.shutdown_tool import register_shutdown_tool
 from .tools.status_tool import register_status_tool
 from .transport import create_argument_parser, run_server_async
 
@@ -60,11 +61,9 @@ class MonitoringMCPServer:
     storage = None
 
     def __init__(self, config: MonitoringConfig | None = None):
-        """
-        Initialize the Monitoring MCP server.
+        """Initialize the Monitoring MCP server with an optional config override.
 
-        Args:
-            config: Optional configuration override. Defaults to environment-based config.
+        Falls back to environment-based config when no override is given.
         """
         self.config = config or MonitoringConfig()
         self.mcp = mcp  # Use global instance
@@ -95,6 +94,9 @@ class MonitoringMCPServer:
 
         # Status and health monitoring
         register_status_tool(self.mcp, self.storage, self.config)
+
+        # Self-termination for orderly agent-driven shutdown
+        register_shutdown_tool(self.mcp)
 
         logger.info("All monitoring tools registered successfully")
 
@@ -130,15 +132,9 @@ def create_monitoring_server(
     prometheus_url: str | None = None,
     loki_url: str | None = None,
 ) -> MonitoringMCPServer:
-    """Create a MonitoringMCPServer instance with optional custom URLs.
+    """Create a MonitoringMCPServer with optional Grafana/Prometheus/Loki URL overrides.
 
-    Args:
-        grafana_url: Custom Grafana URL override
-        prometheus_url: Custom Prometheus URL override
-        loki_url: Custom Loki URL override
-
-    Returns:
-        Configured MonitoringMCPServer instance.
+    Returns the configured MonitoringMCPServer instance.
     """
     kwargs: dict[str, str | None] = {}
     if grafana_url is not None:
