@@ -21,7 +21,15 @@ logger = logging.getLogger(__name__)
 def register_shutdown_tool(mcp: FastMCP) -> None:
     """Register the self-termination tool with the MCP server."""
 
-    @mcp.tool()
+    @mcp.tool(
+        annotations={
+            "title": "Monitoring shutdown",
+            "readOnlyHint": False,
+            "destructiveHint": True,
+            "idempotentHint": False,
+            "openWorldHint": False,
+        }
+    )
     async def monitoring_shutdown(
         delay_ms: Annotated[
             int, Field(description="Delay before exit in milliseconds (lets the response flush)")

@@ -138,6 +138,31 @@ async def test_shutdown_tool_registered(tmp_path: Path, monkeypatch):
         assert expected in names
 
 
+async def test_all_tools_carry_annotations(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv("MONITORING_MCP_STORAGE_PATH", str(tmp_path))
+    MonitoringMCPServer(MonitoringConfig(enable_cache=False))
+    tools = await mcp.list_tools()
+    by_name = {t.name: t for t in tools}
+    assert by_name["cross_system_correlation"].annotations.readOnlyHint is True
+    assert by_name["monitoring_status"].annotations.readOnlyHint is True
+    assert by_name["monitoring_shutdown"].annotations.destructiveHint is True
+    assert by_name["grafana_management"].annotations.openWorldHint is True
+    for tool in tools:
+        assert tool.annotations is not None
+
+
+async def test_prompts_and_resource_registered(tmp_path: Path, monkeypatch):
+    from monitoring_mcp.skills_prompts import register_skills_prompts
+
+    monkeypatch.setenv("MONITORING_MCP_STORAGE_PATH", str(tmp_path))
+    MonitoringMCPServer(MonitoringConfig(enable_cache=False))
+    register_skills_prompts(mcp)
+    prompts = await mcp.list_prompts()
+    assert {"incident_triage", "dashboard_review"} <= {p.name for p in prompts}
+    resources = await mcp.list_resources()
+    assert any(str(r.uri) == "monitoring://capabilities" for r in resources)
+
+
 async def test_shutdown_tool_docstring_compliance():
     from fastmcp import FastMCP
 
