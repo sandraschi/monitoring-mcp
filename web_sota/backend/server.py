@@ -47,8 +47,8 @@ class ActivityLog:
             try:
                 at = float(after_id.split(".")[0])
                 entries = [e for e in entries if float(e["id"].split(".")[0]) > at]
-            except:
-                pass
+            except (ValueError, AttributeError):
+                entries = list(self._entries)
         if level:
             lo = {"DEBUG": 0, "INFO": 1, "WARNING": 2, "ERROR": 3}
             ml = lo.get(level.upper(), 1)

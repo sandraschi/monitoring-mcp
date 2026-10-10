@@ -452,11 +452,11 @@ async def test_correlation_all_ops(prom_client, loki_client, grafana_client):
 
 def test_correlation_helpers():
     m = _prom_matrix()
-    l = _loki_streams()
-    assert _correlate_incident_data(m, l, "spike")["insights"]
-    assert _analyze_root_cause(m, l, {})["confidence"] >= 0
-    assert "bottlenecks" in _correlate_performance_data(m, l)
-    assert "error_clusters" in _correlate_error_data(m, l)
+    streams = _loki_streams()
+    assert _correlate_incident_data(m, streams, "spike")["insights"]
+    assert _analyze_root_cause(m, streams, {})["confidence"] >= 0
+    assert "bottlenecks" in _correlate_performance_data(m, streams)
+    assert "error_clusters" in _correlate_error_data(m, streams)
 
 
 @pytest.mark.asyncio
@@ -565,7 +565,7 @@ async def test_ai_router():
 
 def test_transport_resolve(monkeypatch):
     monkeypatch.setenv("MCP_TRANSPORT", "http")
-    monkeypatch.setenv("MCP_HOST", "0.0.0.0")
+    monkeypatch.setenv("MCP_HOST", "0.0.0.0")  # noqa: S104 - test env parsing, never binds
     monkeypatch.setenv("MCP_PORT", "10851")
     cfg = get_transport_config()
     assert cfg["transport"] == "http"

@@ -17,9 +17,12 @@ if str(base / "src") not in sys.path:
 os.environ.setdefault("MCP_TRANSPORT", "http")
 
 if __name__ == "__main__":
+    import uvicorn
+
     from monitoring_mcp.server import app
 
     host = os.environ.get("MONITORING_HOST", "127.0.0.1")
-    port = int(os.environ.get("MONITORING_PORT", os.environ.get("MCP_PORT", "12007")))
+    # Default matches the fleet registry (fleet-start.config.ps1 BackendPort 10851).
+    port = int(os.environ.get("MONITORING_PORT", os.environ.get("MCP_PORT", "10851")))
     log_level = os.environ.get("MONITORING_LOG_LEVEL", "info")
     uvicorn.run(app, host=host, port=port, log_level=log_level)

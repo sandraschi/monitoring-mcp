@@ -128,6 +128,7 @@ def log_warn(msg: str):
 try:
     import pywinauto
     import pywinauto.findwindows
+
     _HAS_PYWAUTO = True
 except ImportError:
     _HAS_PYWAUTO = False
@@ -175,9 +176,13 @@ def cua_find_window(title_re: str = "", retry_seconds: int = 10) -> dict | None:
                 rect = win.rectangle()
                 w = rect.width if isinstance(rect.width, int) else rect.width()
                 h = rect.height if isinstance(rect.height, int) else rect.height()
-                return {"handle": handle, "title": win.window_text(), "rect": {"left": rect.left, "top": rect.top, "width": w, "height": h}}
-        except Exception:
-            pass
+                return {
+                    "handle": handle,
+                    "title": win.window_text(),
+                    "rect": {"left": rect.left, "top": rect.top, "width": w, "height": h},
+                }
+        except Exception as exc:
+            log(f"window lookup retry ({exc})")
         if time.monotonic() >= deadline:
             return None
         time.sleep(1)
@@ -215,17 +220,20 @@ def cua_ocr_text(window_handle: int = 0, image_path: str = "") -> str:
     """Run OCR on a window screenshot. Returns text."""
     try:
         import pytesseract
+
         pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
         if image_path and os.path.exists(image_path):
             from PIL import Image
+
             return pytesseract.image_to_string(Image.open(image_path))
         if window_handle:
             from PIL import Image
+
             capture = cua_screenshot(window_handle, f"{image_path or 'capture'}.png")
             if capture and os.path.exists(capture):
                 return pytesseract.image_to_string(Image.open(capture))
-    except Exception:
-        pass
+    except Exception as exc:
+        log(f"OCR failed: {exc}")
     return ""
 
 
@@ -233,9 +241,10 @@ def cua_click(window_handle: int, x: int, y: int):
     """Click at (x,y) relative to window."""
     try:
         import pywinauto.mouse
+
         pywinauto.mouse.click(button="left", coords=(x, y))
-    except Exception:
-        pass
+    except Exception as exc:
+        log(f"click failed: {exc}")
 
 
 def _release_mouse():
@@ -246,21 +255,23 @@ def _release_mouse():
     click handler is bound - Escape clears that before the next step."""
     try:
         import ctypes
+
         MOUSEEVENTF_LEFTUP = 0x0004
         MOUSEEVENTF_RIGHTUP = 0x0010
         MOUSEEVENTF_MIDDLEUP = 0x0040
         for flag in (MOUSEEVENTF_LEFTUP, MOUSEEVENTF_RIGHTUP, MOUSEEVENTF_MIDDLEUP):
             ctypes.windll.user32.mouse_event(flag, 0, 0, 0, 0)
-    except Exception:
-        pass
+    except Exception as exc:
+        log(f"mouse release failed: {exc}")
     try:
         import ctypes
+
         VK_ESCAPE = 0x1B
         KEYEVENTF_KEYUP = 0x0002
         ctypes.windll.user32.keybd_event(VK_ESCAPE, 0, 0, 0)
         ctypes.windll.user32.keybd_event(VK_ESCAPE, 0, KEYEVENTF_KEYUP, 0)
-    except Exception:
-        pass
+    except Exception as exc:
+        log(f"escape dismissal failed: {exc}")
 
 
 # ── Helpers ───────────────────────────────────────────────────────────
@@ -332,12 +343,12 @@ def launch_app():
     log(f"Launched {exe}")
     for attempt in range(MAX_RETRY):
         try:
-            resp = urllib.request.urlopen(f"{BACKEND_URL}{HEALTH_PATH}", timeout=5)
+            resp = urllib.request.urlopen(f"{BACKEND_URL}{HEALTH_PATH}", timeout=5)  # noqa: S310 - fixed loopback backend URL, no user input
             if resp.status == 200:
                 log(f"Backend healthy (attempt {attempt + 1})")
                 return
-        except (urllib.error.URLError, urllib.error.HTTPError, OSError):
-            pass
+        except (urllib.error.URLError, urllib.error.HTTPError, OSError) as exc:
+            log(f"backend poll retry ({exc})")
         time.sleep(RETRY_DELAY)
     fatal(f"Backend not reachable after {MAX_RETRY * RETRY_DELAY}s")
 
@@ -355,13 +366,14 @@ def _foreground_and_maximize(handle: int):
     captured unrelated desktop content (a notes window) instead of the app."""
     try:
         import pywinauto
+
         app = pywinauto.Application(backend="uia").connect(handle=handle)
         w = app.window(handle=handle)
         w.set_focus()
         w.maximize()
         time.sleep(1)
-    except Exception:
-        pass
+    except Exception as exc:
+        log(f"window focus/maximize failed: {exc}")
 
 
 def verify_window():
@@ -402,7 +414,7 @@ def take_screenshot(output_dir: str):
 
 def check_feature_route():
     try:
-        resp = urllib.request.urlopen(f"{BACKEND_URL}{FEATURE_PATH}", timeout=5)
+        resp = urllib.request.urlopen(f"{BACKEND_URL}{FEATURE_PATH}", timeout=5)  # noqa: S310 - fixed loopback backend URL, no user input
         body = json.loads(resp.read())
         log(f"Feature route {FEATURE_PATH}: HTTP {resp.status}")
         if resp.status == 200:
@@ -416,7 +428,7 @@ def check_feature_route():
 
 def check_diagnostics():
     try:
-        resp = urllib.request.urlopen(f"{BACKEND_URL}{DIAGNOSTICS_PATH}", timeout=5)
+        resp = urllib.request.urlopen(f"{BACKEND_URL}{DIAGNOSTICS_PATH}", timeout=5)  # noqa: S310 - fixed loopback backend URL, no user input
         data = json.loads(resp.read())
         if data.get("success"):
             d = data["data"]
@@ -515,6 +527,7 @@ def _verify_page_ocr(text: str, label: str, expected: str) -> bool:
 def _nav_click_element(win_handle: int, wx: int, wy: int, idx: int, label: str = ""):
     """Click a nav item. Tries title-based UIA matching first, then index, then coordinates."""
     import pywinauto
+
     app = pywinauto.Application(backend="uia").connect(handle=win_handle)
     w = app.window(handle=win_handle)
 
@@ -526,16 +539,16 @@ def _nav_click_element(win_handle: int, wx: int, wy: int, idx: int, label: str =
             if link:
                 link[0].click_input()
                 return
-        except Exception:
-            pass
+        except Exception as exc:
+            log(f"nav title-match failed, trying text match ({exc})")
         try:
             elements = w.descendants(control_type="Hyperlink")
             el = [e for e in elements if label.lower() in (e.window_text() or "").lower()]
             if el:
                 el[0].click_input()
                 return
-        except Exception:
-            pass
+        except Exception as exc:
+            log(f"nav text-match failed, trying positional ({exc})")
 
     # Fallback: positional Hyperlink
     try:
@@ -543,9 +556,9 @@ def _nav_click_element(win_handle: int, wx: int, wy: int, idx: int, label: str =
         if idx < len(elements):
             elements[idx].click_input()
             return
-    except Exception:
-        pass
-    # Try Pane (some WebView versions)  
+    except Exception as exc:
+        log(f"nav positional click failed, trying pane ({exc})")
+    # Try Pane (some WebView versions)
     try:
         elements = w.descendants(control_type="Pane")
         nav_elements = [e for e in elements if e.rectangle().left < wx + 200]
@@ -553,8 +566,8 @@ def _nav_click_element(win_handle: int, wx: int, wy: int, idx: int, label: str =
         if idx < len(nav_elements_sorted):
             nav_elements_sorted[idx].click_input()
             return
-    except Exception:
-        pass
+    except Exception as exc:
+        log(f"nav pane click failed, falling back to coordinates ({exc})")
 
     # Fallback to coordinate click
     click_x = wx + int(cfg("sidebar_click_x", 30))
@@ -570,7 +583,10 @@ def nav_click_through(output_dir: str):
     _release_mouse()
     _show_automation_warning()
 
-    nav_routes = cfg("nav_routes", [["Dashboard", "Automation Dashboard"], ["Logging", "Logs"], ["Settings", "Settings"], ["Help", "Help"]])
+    nav_routes = cfg(
+        "nav_routes",
+        [["Dashboard", "Automation Dashboard"], ["Logging", "Logs"], ["Settings", "Settings"], ["Help", "Help"]],
+    )
     nav_routes = [(r[0], r[1]) for r in nav_routes if len(r) >= 2]
     win = cua_find_window(WINDOW_TITLE_RE)
     if not win:
@@ -626,8 +642,8 @@ def verify_backend_received_requests(baseline_count: int):
     'ALL PHASES PASSED').
     """
     try:
-        req = urllib.request.Request(f"{BACKEND_URL}{REQUEST_LOG_PATH}")
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        req = urllib.request.Request(f"{BACKEND_URL}{REQUEST_LOG_PATH}")  # noqa: S310 - fixed loopback backend URL, no user input
+        with urllib.request.urlopen(req, timeout=5) as resp:  # noqa: S310 - fixed loopback backend URL, no user input
             if resp.status == 404:
                 log("Backend-receipt check skipped (repo has no request-log endpoint yet)")
                 return
@@ -661,8 +677,8 @@ def verify_backend_received_requests(baseline_count: int):
 
 def _get_request_log_count() -> int:
     try:
-        req = urllib.request.Request(f"{BACKEND_URL}{REQUEST_LOG_PATH}")
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        req = urllib.request.Request(f"{BACKEND_URL}{REQUEST_LOG_PATH}")  # noqa: S310 - fixed loopback backend URL, no user input
+        with urllib.request.urlopen(req, timeout=5) as resp:  # noqa: S310 - fixed loopback backend URL, no user input
             return json.loads(resp.read().decode()).get("count", 0)
     except Exception:
         return 0
