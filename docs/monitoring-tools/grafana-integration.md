@@ -48,24 +48,13 @@ dashboard_data = {
         {
             "title": "Request Rate",
             "type": "graph",
-            "targets": [
-                {
-                    "expr": "rate(http_requests_total[5m])",
-                    "legendFormat": "{{method}} {{status}}"
-                }
-            ]
+            "targets": [{"expr": "rate(http_requests_total[5m])", "legendFormat": "{{method}} {{status}}"}],
         }
     ],
-    "time": {
-        "from": "now-1h",
-        "to": "now"
-    }
+    "time": {"from": "now-1h", "to": "now"},
 }
 
-result = await grafana_management(
-    operation="create_dashboard",
-    dashboard_data=dashboard_data
-)
+result = await grafana_management(operation="create_dashboard", dashboard_data=dashboard_data)
 
 print(f"Dashboard created with UID: {result['data']['uid']}")
 print(result["conversational_summary"])
@@ -75,10 +64,7 @@ print(result["conversational_summary"])
 
 ```python
 # Analyze dashboard for optimization opportunities
-result = await grafana_management(
-    operation="analyze_dashboard",
-    dashboard_uid="your_dashboard_uid"
-)
+result = await grafana_management(operation="analyze_dashboard", dashboard_uid="your_dashboard_uid")
 
 print(f"Dashboard score: {result['analysis']['overall_score']}/10")
 print(f"Recommendations: {len(result['ai_insights']['recommendations'])}")
@@ -108,17 +94,8 @@ for ds in result["data"]:
 result = await grafana_management(
     operation="query_datasource",
     datasource_id=1,  # Prometheus datasource ID
-    queries=[
-        {
-            "expr": "up",
-            "format": "time_series",
-            "intervalFactor": 1
-        }
-    ],
-    time_range={
-        "from": "now-1h",
-        "to": "now"
-    }
+    queries=[{"expr": "up", "format": "time_series", "intervalFactor": 1}],
+    time_range={"from": "now-1h", "to": "now"},
 )
 
 print(f"Query executed successfully: {result['success']}")
@@ -137,13 +114,8 @@ result = await grafana_management(
     panel_data={
         "title": "Error Rate",
         "type": "stat",
-        "targets": [
-            {
-                "expr": "rate(http_requests_total{status=~'5..'}[$__rate_interval])",
-                "refId": "A"
-            }
-        ]
-    }
+        "targets": [{"expr": "rate(http_requests_total{status=~'5..'}[$__rate_interval])", "refId": "A"}],
+    },
 )
 
 print(result["conversational_summary"])
@@ -164,10 +136,7 @@ alert_rule = {
     "data": [],
 }
 
-result = await grafana_management(
-    operation="create_alert",
-    alert_rule=alert_rule
-)
+result = await grafana_management(operation="create_alert", alert_rule=alert_rule)
 
 print(result["conversational_summary"])
 ```
@@ -178,10 +147,7 @@ print(result["conversational_summary"])
 
 ```python
 # Search dashboards by title or tags
-result = await grafana_management(
-    operation="search_dashboards",
-    search_query="api performance"
-)
+result = await grafana_management(operation="search_dashboards", search_query="api performance")
 
 print(f"Found {result['count']} dashboards matching 'api performance'")
 ```
@@ -190,13 +156,11 @@ print(f"Found {result['count']} dashboards matching 'api performance'")
 
 ```python
 # Export dashboard as JSON
-result = await grafana_management(
-    operation="export_dashboard",
-    dashboard_uid="your_dashboard_uid"
-)
+result = await grafana_management(operation="export_dashboard", dashboard_uid="your_dashboard_uid")
 
 # Save to file
 import json
+
 with open("dashboard_backup.json", "w") as f:
     json.dump(result["data"], f, indent=2)
 
@@ -252,10 +216,7 @@ if grafana_status["status"] != "connected":
 #### Permission Issues
 ```python
 # Check permissions on specific dashboard
-result = await grafana_management(
-    operation="get_dashboard_permissions",
-    dashboard_uid="your_dashboard_uid"
-)
+result = await grafana_management(operation="get_dashboard_permissions", dashboard_uid="your_dashboard_uid")
 print(f"Permissions: {result['data']}")
 ```
 
@@ -278,13 +239,11 @@ async def create_deployment_dashboard(version, environment):
         "tags": ["deployment", environment, version],
         "panels": [
             # Add relevant panels for deployment monitoring
-        ]
+        ],
     }
 
     result = await grafana_management(
-        operation="create_dashboard",
-        dashboard_data=dashboard_data,
-        folder_name=f"Deployments/{environment}"
+        operation="create_dashboard", dashboard_data=dashboard_data, folder_name=f"Deployments/{environment}"
     )
 
     return result["data"]["url"]
@@ -298,19 +257,16 @@ async def setup_service_alerts(service_name):
     alerts = [
         {
             "name": f"{service_name} - High Error Rate",
-            "query": f'rate(http_requests_total{{service="{service_name}", status=~"5.."}}[5m]) > 0.05'
+            "query": f'rate(http_requests_total{{service="{service_name}", status=~"5.."}}[5m]) > 0.05',
         },
         {
             "name": f"{service_name} - High Latency",
-            "query": f'histogram_quantile(0.95, rate(http_request_duration_seconds{{service="{service_name}"}}[5m])) > 2'
-        }
+            "query": f'histogram_quantile(0.95, rate(http_request_duration_seconds{{service="{service_name}"}}[5m])) > 2',
+        },
     ]
 
     for alert in alerts:
-        await grafana_management(
-            operation="create_alert",
-            alert_rule=alert
-        )
+        await grafana_management(operation="create_alert", alert_rule=alert)
 ```
 
 ## API Reference
@@ -335,15 +291,15 @@ async def setup_service_alerts(service_name):
 
 ```python
 {
-    "success": bool,           # Operation success status
-    "operation": string,       # Operation performed
-    "data": dict,             # Operation-specific data
+    "success": bool,  # Operation success status
+    "operation": string,  # Operation performed
+    "data": dict,  # Operation-specific data
     "conversational_summary": string,  # Natural language summary
-    "ai_insights": {          # AI-powered recommendations
+    "ai_insights": {  # AI-powered recommendations
         "recommendations": list,
         "alerting_opportunities": list,
-        "optimization_suggestions": list
-    }
+        "optimization_suggestions": list,
+    },
 }
 ```
 

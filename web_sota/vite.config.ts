@@ -10,7 +10,7 @@ export default defineConfig({
     },
   },
   server: {
-    allowedHosts: ['goliath'],
+    allowedHosts: ["goliath"],
     port: 10850,
     strictPort: true,
     host: "127.0.0.1",
@@ -24,5 +24,5 @@ export default defineConfig({
       "/redoc": { target: "http://127.0.0.1:10851", changeOrigin: true },
       "/openapi.json": { target: "http://127.0.0.1:10851", changeOrigin: true },
     },
-  }
+  },
 });
