@@ -9,9 +9,10 @@ to provide unified insights across monitoring systems.
 """
 
 import logging
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 from fastmcp import FastMCP
+from pydantic import Field
 
 from monitoring_mcp.config import MonitoringConfig
 
@@ -49,47 +50,52 @@ def register_correlation_tool(
 
     @mcp.tool()
     async def cross_system_correlation(
-        operation: Literal[
-            "correlate_incident",
-            "find_root_cause",
-            "performance_correlation",
-            "error_correlation",
-            "anomaly_correlation",
-            "service_dependency_map",
-            "impact_analysis",
-            "predictive_insights",
-            "health_assessment",
-            "bottleneck_detection",
+        operation: Annotated[
+            Literal[
+                "correlate_incident",
+                "find_root_cause",
+                "performance_correlation",
+                "error_correlation",
+                "anomaly_correlation",
+                "service_dependency_map",
+                "impact_analysis",
+                "predictive_insights",
+                "health_assessment",
+                "bottleneck_detection",
+            ],
+            Field(description="Correlation operation to perform"),
         ],
-        time_range: dict[str, str] | None = None,
-        service_name: str | None = None,
-        incident_description: str | None = None,
-        error_pattern: str | None = None,
-        metric_query: str | None = None,
-        log_query: str | None = None,
-        correlation_context: dict[str, Any] | None = None,
+        time_range: Annotated[
+            dict[str, str] | None, Field(description="Analysis window, e.g. {'start': ..., 'end': ...}")
+        ] = None,
+        service_name: Annotated[str | None, Field(description="Service under analysis")] = None,
+        incident_description: Annotated[
+            str | None, Field(description="Incident narrative for correlate_incident/find_root_cause")
+        ] = None,
+        error_pattern: Annotated[str | None, Field(description="Error substring/regex for error_correlation")] = None,
+        metric_query: Annotated[str | None, Field(description="PromQL query for metric correlation")] = None,
+        log_query: Annotated[str | None, Field(description="LogQL query for log correlation")] = None,
+        correlation_context: Annotated[
+            dict[str, Any] | None, Field(description="Additional context for the correlation analysis")
+        ] = None,
     ) -> dict[str, Any]:
-        """
-        Intelligent cross-system correlation tool leveraging FastMCP 2.14.3.
+        """Cross-system correlation: incidents, root cause, dependencies, impact, bottlenecks.
 
         PORTMANTEAU PATTERN: Consolidates 10 correlation operations into a single tool
         to provide unified insights across Grafana, Prometheus, and Loki systems.
 
-        Provides AI-powered correlation analysis, root cause detection, and conversational
-        insights for comprehensive system observability.
+        ## Return Format
+        {"success": bool, "operation": str, "data": <correlation payload>,
+         "conversational_summary": str, "ai_insights": {...},
+         "error": str (on failure only), "troubleshooting_tips": [...] (on failure only)}
 
-        Args:
-            operation: The correlation operation to perform
-            time_range: Time range for analysis (start/end timestamps)
-            service_name: Name of service to analyze
-            incident_description: Description of incident for correlation
-            error_pattern: Error pattern to correlate with metrics
-            metric_query: PromQL query for metric correlation
-            log_query: LogQL query for log correlation
-            correlation_context: Additional context for correlation analysis
-
-        Returns:
-            Dict containing correlation results with conversational summary and insights
+        ## Examples
+        cross_system_correlation(operation="health_assessment")
+        cross_system_correlation(operation="correlate_incident",
+                                 incident_description="checkout latency spike",
+                                 time_range={"start": "2026-10-09T10:00:00Z", "end": "2026-10-09T11:00:00Z"})
+        cross_system_correlation(operation="error_correlation", error_pattern="Connection refused",
+                                 service_name="checkout")
         """
         try:
             if operation not in CORRELATION_OPERATIONS:

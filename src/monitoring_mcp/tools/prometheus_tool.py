@@ -9,10 +9,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 import httpx
 from fastmcp import FastMCP
+from pydantic import Field
 
 from monitoring_mcp.config import MonitoringConfig
 from monitoring_mcp.utils import ResponseCache, map_parallel, match_prometheus_target, sample_list
@@ -183,45 +184,65 @@ def register_prometheus_tool(
 
     @mcp.tool()
     async def prometheus_monitoring(
-        operation: Literal[
-            "query_metrics",
-            "query_range",
-            "list_targets",
-            "get_target_health",
-            "list_rules",
-            "get_rule_groups",
-            "create_alert_rule",
-            "update_alert_rule",
-            "delete_alert_rule",
-            "list_alerts",
-            "get_alert_details",
-            "silence_alert",
-            "list_silences",
-            "expire_silence",
-            "get_build_info",
-            "get_config",
-            "get_flags",
-            "analyze_metrics",
-            "optimize_queries",
+        operation: Annotated[
+            Literal[
+                "query_metrics",
+                "query_range",
+                "list_targets",
+                "get_target_health",
+                "list_rules",
+                "get_rule_groups",
+                "create_alert_rule",
+                "update_alert_rule",
+                "delete_alert_rule",
+                "list_alerts",
+                "get_alert_details",
+                "silence_alert",
+                "list_silences",
+                "expire_silence",
+                "get_build_info",
+                "get_config",
+                "get_flags",
+                "analyze_metrics",
+                "optimize_queries",
+            ],
+            Field(description="Prometheus/Alertmanager operation to perform"),
         ],
-        query: str | None = None,
-        start_time: str | None = None,
-        end_time: str | None = None,
-        step: str | None = None,
-        target_name: str | None = None,
-        rule_group: str | None = None,
-        alert_name: str | None = None,
-        silence_data: dict[str, Any] | None = None,
-        silence_id: str | None = None,
-        analysis_context: dict[str, Any] | None = None,
-        alert_rule: dict[str, Any] | None = None,
-        rule_uid: str | None = None,
+        query: Annotated[str | None, Field(description="PromQL expression for query/analyze ops")] = None,
+        start_time: Annotated[str | None, Field(description="Range-query start (RFC3339 or duration)")] = None,
+        end_time: Annotated[str | None, Field(description="Range-query end (RFC3339 or duration)")] = None,
+        step: Annotated[str | None, Field(description="Range-query step, e.g. '15s'")] = None,
+        target_name: Annotated[str | None, Field(description="Scrape-target filter for get_target_health")] = None,
+        rule_group: Annotated[str | None, Field(description="Rule-group name for get_rule_groups")] = None,
+        alert_name: Annotated[str | None, Field(description="Alert name for get_alert_details/silence_alert")] = None,
+        silence_data: Annotated[
+            dict[str, Any] | None, Field(description="Alertmanager silence body for silence_alert")
+        ] = None,
+        silence_id: Annotated[str | None, Field(description="Silence id for expire_silence")] = None,
+        analysis_context: Annotated[
+            dict[str, Any] | None, Field(description="Extra context for analyze_metrics/optimize_queries")
+        ] = None,
+        alert_rule: Annotated[
+            dict[str, Any] | None, Field(description="Grafana unified-alert rule body for rule CRUD")
+        ] = None,
+        rule_uid: Annotated[str | None, Field(description="Rule UID for update/delete_alert_rule")] = None,
     ) -> dict[str, Any]:
-        """
-        Comprehensive Prometheus monitoring portmanteau tool.
+        """Prometheus monitoring: PromQL queries, targets, rules, alerts, silences, AI analysis.
 
-        Consolidates Prometheus, Alertmanager silences, and Grafana unified
-        alerting rule CRUD into one tool.
+        PORTMANTEAU PATTERN: Consolidates Prometheus, Alertmanager silences, and Grafana
+        unified-alerting rule CRUD into one tool.
+
+        ## Return Format
+        {"success": bool, "operation": str, "data": <payload>,
+         "conversational_summary": str, "ai_insights": {...} (query/analyze/alert-list ops only),
+         "error": str (on failure only), "troubleshooting_tips": [...] (on failure only)}
+
+        ## Examples
+        prometheus_monitoring(operation="query_metrics", query="up")
+        prometheus_monitoring(operation="query_range", query="rate(http_requests_total[5m])",
+                              start_time="2026-10-01T00:00:00Z", end_time="2026-10-02T00:00:00Z", step="15s")
+        prometheus_monitoring(operation="list_targets")
+        prometheus_monitoring(operation="list_alerts")
         """
         try:
             if operation not in PROMETHEUS_OPERATIONS:

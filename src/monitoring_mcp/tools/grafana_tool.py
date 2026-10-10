@@ -9,10 +9,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 import httpx
 from fastmcp import FastMCP
+from pydantic import Field
 
 from monitoring_mcp.config import MonitoringConfig
 from monitoring_mcp.utils import ResponseCache
@@ -180,40 +181,69 @@ def register_grafana_tool(
 
     @mcp.tool()
     async def grafana_management(
-        operation: Literal[
-            "list_dashboards",
-            "get_dashboard",
-            "create_dashboard",
-            "update_dashboard",
-            "delete_dashboard",
-            "search_dashboards",
-            "list_datasources",
-            "query_datasource",
-            "create_panel",
-            "update_panel",
-            "create_alert",
-            "export_dashboard",
-            "import_dashboard",
-            "list_folders",
-            "create_folder",
-            "get_dashboard_permissions",
-            "analyze_dashboard",
+        operation: Annotated[
+            Literal[
+                "list_dashboards",
+                "get_dashboard",
+                "create_dashboard",
+                "update_dashboard",
+                "delete_dashboard",
+                "search_dashboards",
+                "list_datasources",
+                "query_datasource",
+                "create_panel",
+                "update_panel",
+                "create_alert",
+                "export_dashboard",
+                "import_dashboard",
+                "list_folders",
+                "create_folder",
+                "get_dashboard_permissions",
+                "analyze_dashboard",
+            ],
+            Field(description="Grafana operation to perform (see GRAFANA_OPERATIONS for per-op requirements)"),
         ],
-        dashboard_uid: str | None = None,
-        dashboard_title: str | None = None,
-        dashboard_data: dict[str, Any] | None = None,
-        search_query: str | None = None,
-        folder_id: int | None = None,
-        datasource_id: int | None = None,
-        queries: list[dict[str, Any]] | None = None,
-        time_range: dict[str, str] | None = None,
-        panel_data: dict[str, Any] | None = None,
-        panel_id: int | None = None,
-        alert_rule: dict[str, Any] | None = None,
-        folder_name: str | None = None,
-        folder_uid: str | None = None,
+        dashboard_uid: Annotated[
+            str | None, Field(description="Dashboard UID for get/update/delete/export calls")
+        ] = None,
+        dashboard_title: Annotated[
+            str | None, Field(description="Dashboard title filter or folder-title fallback")
+        ] = None,
+        dashboard_data: Annotated[
+            dict[str, Any] | None, Field(description="Full dashboard JSON body for create/update/import calls")
+        ] = None,
+        search_query: Annotated[str | None, Field(description="Title/tag substring for search_dashboards")] = None,
+        folder_id: Annotated[int | None, Field(description="Numeric folder id for create/import calls")] = None,
+        datasource_id: Annotated[int | None, Field(description="Numeric datasource id for query_datasource")] = None,
+        queries: Annotated[
+            list[dict[str, Any]] | None, Field(description="Datasource query payloads for query_datasource")
+        ] = None,
+        time_range: Annotated[
+            dict[str, str] | None, Field(description="Query window, e.g. {'from': 'now-1h', 'to': 'now'}")
+        ] = None,
+        panel_data: Annotated[
+            dict[str, Any] | None, Field(description="Panel JSON for create_panel/update_panel")
+        ] = None,
+        panel_id: Annotated[int | None, Field(description="Numeric panel id for update_panel")] = None,
+        alert_rule: Annotated[dict[str, Any] | None, Field(description="Alert-rule body for create_alert")] = None,
+        folder_name: Annotated[str | None, Field(description="Folder title for create_folder")] = None,
+        folder_uid: Annotated[str | None, Field(description="Optional folder UID for create_folder")] = None,
     ) -> dict[str, Any]:
-        """Comprehensive Grafana management portmanteau tool."""
+        """Grafana management: dashboards, datasources, panels, folders, alert rules, AI analysis.
+
+        PORTMANTEAU PATTERN: Consolidates 17 Grafana operations into a single tool.
+
+        ## Return Format
+        {"success": bool, "operation": str, "data": <payload>, "count": int (list/search ops only),
+         "conversational_summary": str, "ai_insights": {...} (analyze_dashboard/list_dashboards only),
+         "error": str (on failure only), "available_operations": [...] (on invalid operation only)}
+
+        ## Examples
+        grafana_management(operation="list_dashboards")
+        grafana_management(operation="get_dashboard", dashboard_uid="abc123")
+        grafana_management(operation="search_dashboards", search_query="payments")
+        grafana_management(operation="create_folder", folder_name="SLOs")
+        """
         try:
             if operation not in GRAFANA_OPERATIONS:
                 return {

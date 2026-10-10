@@ -10,11 +10,12 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 from urllib.parse import urlencode, urlparse, urlunparse
 
 import httpx
 from fastmcp import FastMCP
+from pydantic import Field
 
 from monitoring_mcp.config import MonitoringConfig
 from monitoring_mcp.utils import ResponseCache, sample_list
@@ -246,39 +247,62 @@ def register_loki_tool(
 
     @mcp.tool()
     async def loki_logging(
-        operation: Literal[
-            "query_logs",
-            "query_range",
-            "tail_logs",
-            "analyze_logs",
-            "detect_anomalies",
-            "search_errors",
-            "trace_requests",
-            "get_labels",
-            "get_label_values",
-            "get_series",
-            "create_alert_rule",
-            "list_alerts",
-            "optimize_queries",
-            "export_logs",
-            "compare_timeframes",
-            "generate_report",
+        operation: Annotated[
+            Literal[
+                "query_logs",
+                "query_range",
+                "tail_logs",
+                "analyze_logs",
+                "detect_anomalies",
+                "search_errors",
+                "trace_requests",
+                "get_labels",
+                "get_label_values",
+                "get_series",
+                "create_alert_rule",
+                "list_alerts",
+                "optimize_queries",
+                "export_logs",
+                "compare_timeframes",
+                "generate_report",
+            ],
+            Field(description="Loki operation to perform"),
         ],
-        query: str | None = None,
-        start_time: str | None = None,
-        end_time: str | None = None,
-        limit: int | None = None,
-        label_name: str | None = None,
-        match_patterns: list[str] | None = None,
-        analysis_context: dict[str, Any] | None = None,
-        alert_rule: dict[str, Any] | str | None = None,
-        rule_namespace: str | None = None,
-        export_format: str | None = None,
-        compare_start: str | None = None,
-        compare_end: str | None = None,
-        tail_duration_seconds: float | None = None,
+        query: Annotated[str | None, Field(description="LogQL expression for log query ops")] = None,
+        start_time: Annotated[str | None, Field(description="Query window start (RFC3339 or relative)")] = None,
+        end_time: Annotated[str | None, Field(description="Query window end (RFC3339 or relative)")] = None,
+        limit: Annotated[int | None, Field(description="Max log lines to return")] = None,
+        label_name: Annotated[str | None, Field(description="Label name for get_label_values")] = None,
+        match_patterns: Annotated[list[str] | None, Field(description="Series-matcher strings for get_series")] = None,
+        analysis_context: Annotated[
+            dict[str, Any] | None, Field(description="Extra context for analyze/detect/report ops")
+        ] = None,
+        alert_rule: Annotated[
+            dict[str, Any] | str | None, Field(description="Ruler-rule body (YAML/JSON) for create_alert_rule")
+        ] = None,
+        rule_namespace: Annotated[str | None, Field(description="Ruler namespace for create_alert_rule")] = None,
+        export_format: Annotated[str | None, Field(description="Export format for export_logs (json/csv)")] = None,
+        compare_start: Annotated[str | None, Field(description="Baseline window start for compare_timeframes")] = None,
+        compare_end: Annotated[str | None, Field(description="Baseline window end for compare_timeframes")] = None,
+        tail_duration_seconds: Annotated[
+            float | None, Field(description="Tail capture window in seconds for tail_logs")
+        ] = None,
     ) -> dict[str, Any]:
-        """Comprehensive Loki logging portmanteau tool."""
+        """Loki logging: LogQL queries, tail, anomaly detection, error search, reports.
+
+        PORTMANTEAU PATTERN: Consolidates 16 Loki operations into a single tool.
+
+        ## Return Format
+        {"success": bool, "operation": str, "data": <payload>,
+         "conversational_summary": str, "ai_insights": {...} (query/search/detect ops only),
+         "error": str (on failure only)}
+
+        ## Examples
+        loki_logging(operation="query_logs", query='{app="api"} |= "error"', limit=100)
+        loki_logging(operation="search_errors", query='{app="api"}', start_time="2026-10-09T00:00:00Z")
+        loki_logging(operation="get_labels")
+        loki_logging(operation="detect_anomalies", query='{app="api"}')
+        """
         try:
             if operation not in LOKI_OPERATIONS:
                 return {

@@ -9,9 +9,10 @@ to provide unified health monitoring across all systems.
 """
 
 import logging
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 from fastmcp import FastMCP
+from pydantic import Field
 
 from monitoring_mcp.config import MonitoringConfig
 
@@ -49,39 +50,42 @@ def register_status_tool(
 
     @mcp.tool()
     async def monitoring_status(
-        operation: Literal[
-            "system_health",
-            "connectivity_test",
-            "configuration_validation",
-            "performance_metrics",
-            "data_flow_status",
-            "alert_status",
-            "storage_status",
-            "backup_status",
-            "security_status",
-            "capacity_planning",
+        operation: Annotated[
+            Literal[
+                "system_health",
+                "connectivity_test",
+                "configuration_validation",
+                "performance_metrics",
+                "data_flow_status",
+                "alert_status",
+                "storage_status",
+                "backup_status",
+                "security_status",
+                "capacity_planning",
+            ],
+            Field(description="Status operation to perform"),
         ],
-        component_filter: list[str] | None = None,
-        detailed_check: bool = False,
-        include_historical: bool = False,
+        component_filter: Annotated[
+            list[str] | None, Field(description="Components to check: subset of grafana/prometheus/loki")
+        ] = None,
+        detailed_check: Annotated[bool, Field(description="Perform detailed diagnostic checks")] = False,
+        include_historical: Annotated[bool, Field(description="Include historical health data")] = False,
     ) -> dict[str, Any]:
-        """
-        Comprehensive monitoring status and health tool leveraging FastMCP 2.14.3.
+        """Monitoring status and health across Grafana, Prometheus, and Loki.
 
         PORTMANTEAU PATTERN: Consolidates 10 status operations into a single tool
-        to provide unified health monitoring across Grafana, Prometheus, and Loki.
+        to provide unified health monitoring with conversational insights.
 
-        Provides intelligent health assessment, diagnostic capabilities, and conversational
-        insights for monitoring system maintenance and troubleshooting.
+        ## Return Format
+        {"success": bool, "operation": str, <operation-specific payload>,
+         "conversational_summary": str, "ai_insights": {...},
+         "error": str (on failure only), "troubleshooting_tips": [...] (on failure only)}
 
-        Args:
-            operation: The status operation to perform
-            component_filter: Optional list of components to focus on (grafana, prometheus, loki)
-            detailed_check: Whether to perform detailed diagnostic checks
-            include_historical: Whether to include historical health data
-
-        Returns:
-            Dict containing status results with conversational summary and insights
+        ## Examples
+        monitoring_status(operation="system_health")
+        monitoring_status(operation="connectivity_test", component_filter=["prometheus", "loki"])
+        monitoring_status(operation="alert_status")
+        monitoring_status(operation="security_status", detailed_check=True)
         """
         try:
             if operation not in STATUS_OPERATIONS:
@@ -139,24 +143,11 @@ async def _execute_status_operation(
     detailed_check: bool = False,
     include_historical: bool = False,
 ) -> dict[str, Any]:
-    """
-    Execute the specific status operation based on the operation type.
+    """Route a status operation to its handler and format the result consistently.
 
-    This function routes status operations to their appropriate handlers and
-    formats the results consistently.
-
-    Args:
-        operation: The status operation to execute (e.g., "system_health", "connectivity_test")
-        grafana_client: Client for Grafana operations
-        prometheus_client: Client for Prometheus operations
-        loki_client: Client for Loki operations
-        config: Server configuration
-        component_filter: List of components to check (defaults to all)
-        detailed_check: Whether to perform detailed diagnostic checks
-        include_historical: Whether to include historical data in results
-
-    Returns:
-        Dictionary containing operation results with success status and data
+    Routes to one of the system_health / connectivity_test / configuration_validation /
+    performance_metrics / data_flow_status / alert_status / storage_status / backup_status /
+    security_status / capacity_planning handlers. Returns the formatted result dict.
     """
     # Default component filter to all if not specified
     if component_filter is None:
@@ -385,21 +376,11 @@ async def _check_system_health(
     _detailed_check: bool,
     _include_historical: bool,
 ) -> dict[str, Any]:
-    """
-    Check overall system health across all monitoring components.
+    """Check overall system health across Grafana, Prometheus, and Loki.
 
-    Performs connectivity and basic functionality tests for Grafana, Prometheus,
-    and Loki, then determines an overall health status.
-
-    Args:
-        grafana_client: Client for Grafana operations
-        prometheus_client: Client for Prometheus operations
-        loki_client: Client for Loki operations
-        component_filter: List of components to check
-        _detailed_check: Whether to perform detailed checks (unused for now)
-
-    Returns:
-        Dictionary containing health status for each component and overall assessment
+    Runs connectivity plus basic functionality probes per component in the filter,
+    then rolls them up into an overall healthy/degraded/unhealthy verdict.
+    Returns the health-status dict with per-component details and issues.
     """
     health_status = {
         "overall_status": "healthy",
