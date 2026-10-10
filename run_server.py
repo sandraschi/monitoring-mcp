@@ -22,10 +22,7 @@ if __name__ == "__main__":
 
     host = os.environ.get("MONITORING_HOST", "127.0.0.1")
     # backend.rs sets PORT=<BACKEND_PORT>; bind that so the webview health check passes.
-    port = int(
-        os.environ.get("MONITORING_PORT")
-        or os.environ.get("MCP_PORT")
-        or os.environ.get("PORT", "12007")
-    )
+    # Default matches the fleet registry (fleet-start.config.ps1 BackendPort 10851).
+    port = int(os.environ.get("MONITORING_PORT") or os.environ.get("MCP_PORT") or os.environ.get("PORT", "10851"))
     log_level = os.environ.get("MONITORING_LOG_LEVEL", "info")
     uvicorn.run(app, host=host, port=port, log_level=log_level)

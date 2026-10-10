@@ -25,6 +25,18 @@ fmt-check:
 test:
     Set-Location '{{justfile_directory()}}'; uv run --extra dev pytest -x --tb=short -k "not slow"
 
+# Serve the FastAPI backend locally (port 10851 per fleet-start.config.ps1)
+serve:
+    Set-Location '{{justfile_directory()}}'; uv run uvicorn monitoring_mcp.server:app --host 127.0.0.1 --port 10851
+
+# Playwright E2E (starts backend + frontend via webServer entries)
+e2e:
+    Set-Location '{{justfile_directory()}}\web_sota'; npx playwright test
+
+# Full local gate: lint + format-check + unit tests
+certify:
+    Set-Location '{{justfile_directory()}}'; uv run ruff check .; uv run ruff format . --check; uv run --extra dev pytest -x --tb=short -k "not slow"
+
 # Build the .mcpb bundle (wipe + fresh-copy src -> mcpb/src, then pack)
 mcpb-pack:
     Set-Location '{{justfile_directory()}}'; powershell.exe -NoProfile -ExecutionPolicy Bypass -File '{{justfile_directory()}}\scripts\mcpb-pack.ps1' -RepoRoot '{{justfile_directory()}}'
