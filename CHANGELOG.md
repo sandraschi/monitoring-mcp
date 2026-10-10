@@ -1,4 +1,37 @@
 
+## [Unreleased] — 2026-10-10 (assfix pass 2)
+
+### Added
+- Self-termination: `monitoring_shutdown` MCP tool + `POST /api/shutdown`
+  (200-then-exit, live-proven against the fleet launcher backend)
+- REST expansion: `GET /api/capabilities`, `GET /api/skills` (+ `/{name}` 404),
+  `GET /api/llm/discover|models|onboarding`, `POST /api/chat/stream` (SSE),
+  `POST /api/llm/chat` (Ollama/LM Studio proxy, 502 when unreachable),
+  `POST /api/webhooks/alertmanager` (receipt + validation)
+- MCP surface: `ToolAnnotations` on all 6 tools, `@mcp.prompt()` templates
+  (`incident_triage`, `dashboard_review`), `monitoring://capabilities` resource,
+  `skills/monitoring-observability/SKILL.md` runbook
+- Backend lifespan constructs the server at startup, so REST endpoints
+  (`/api/tools`, `/api/capabilities`, `/api/chat`) see all 6 registered tools
+- Session files: `.cursorrules` + `.windsurfrules` (Session Context),
+  `.github/copilot-instructions.md`, `.claude-plugin/` (SessionStart hook);
+  `docs/ONBOARDING.md` + dashboard `onboarding-cue` under the hero
+- Launcher: fleet-engine `start.ps1` (engine + naked-PC fallback, `-BackendOnly`
+  certified live: sync -> health 200 on :10851), `start.bat` `%*` passthrough;
+  justfile `serve`/`e2e`/`certify`; Playwright `webServer` now starts backend
+  AND frontend; `renovate.json` (stabilityDays 3, Monday schedule)
+
+### Fixed
+- Tool docstrings: `## Return Format` + `## Examples` on all tools,
+  `Annotated[..., Field(description=...)]` params, no `Args:` blocks
+- CORS: unconditional `allow_origin_regex` (was env-gated); MCP HTTP transport
+  serves `mcp.http_app()` via uvicorn with CORSMiddleware (was `run_http_async`)
+- Frontend: same-origin `API_BASE` (absolute only under Tauri) + vite `/api`,
+  `/health`, `/docs`, `/redoc`, `/openapi.json` proxy (LAN/Tailscale tabs work)
+- `.gitignore`: scoped `lib/` -> `/lib/` (was swallowing untracked
+  `web_sota/src/lib/` — api/store/use-zoom now tracked); `run_server.py`
+  default port 12007 -> registry 10851
+
 ## [Unreleased] — 2026-10-09 (assfix)
 
 ### Fixed

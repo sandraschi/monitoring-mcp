@@ -9,11 +9,20 @@ export default defineConfig({
     headless: true,
     screenshot: "only-on-failure",
   },
-  webServer: {
-    command: "uv run uvicorn monitoring_mcp.server:app --host 127.0.0.1 --port 10851 --log-level warning",
-    port: 10851,
-    cwd: "../",
-    timeout: 30000,
-    reuseExistingServer: false,
-  },
+  webServer: [
+    {
+      command:
+        "uv run uvicorn monitoring_mcp.server:app --host 127.0.0.1 --port 10851 --log-level warning",
+      port: 10851,
+      cwd: "../",
+      timeout: 30000,
+      reuseExistingServer: false,
+    },
+    {
+      command: "npm run dev -- --port 10850 --host 127.0.0.1",
+      port: 10850,
+      timeout: 60000,
+      reuseExistingServer: false,
+    },
+  ],
 });
