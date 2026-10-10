@@ -48,7 +48,15 @@ def register_correlation_tool(
     prometheus_client = PrometheusClient(config)
     loki_client = LokiClient(config)
 
-    @mcp.tool()
+    @mcp.tool(
+        annotations={
+            "title": "Cross-system correlation",
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "idempotentHint": True,
+            "openWorldHint": True,
+        }
+    )
     async def cross_system_correlation(
         operation: Annotated[
             Literal[

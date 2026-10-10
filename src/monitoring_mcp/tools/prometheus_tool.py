@@ -182,7 +182,15 @@ def register_prometheus_tool(
 
     client = PrometheusClient(config)
 
-    @mcp.tool()
+    @mcp.tool(
+        annotations={
+            "title": "Prometheus monitoring",
+            "readOnlyHint": False,
+            "destructiveHint": True,
+            "idempotentHint": False,
+            "openWorldHint": True,
+        }
+    )
     async def prometheus_monitoring(
         operation: Annotated[
             Literal[

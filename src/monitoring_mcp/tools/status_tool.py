@@ -48,7 +48,15 @@ def register_status_tool(
     prometheus_client = PrometheusClient(config)
     loki_client = LokiClient(config)
 
-    @mcp.tool()
+    @mcp.tool(
+        annotations={
+            "title": "Monitoring status",
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "idempotentHint": True,
+            "openWorldHint": True,
+        }
+    )
     async def monitoring_status(
         operation: Annotated[
             Literal[

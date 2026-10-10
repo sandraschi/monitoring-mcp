@@ -179,7 +179,15 @@ def register_grafana_tool(
 
     client = GrafanaClient(config)
 
-    @mcp.tool()
+    @mcp.tool(
+        annotations={
+            "title": "Grafana management",
+            "readOnlyHint": False,
+            "destructiveHint": True,
+            "idempotentHint": False,
+            "openWorldHint": True,
+        }
+    )
     async def grafana_management(
         operation: Annotated[
             Literal[

@@ -245,7 +245,15 @@ def register_loki_tool(
 
     client = LokiClient(config)
 
-    @mcp.tool()
+    @mcp.tool(
+        annotations={
+            "title": "Loki logging",
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "idempotentHint": False,
+            "openWorldHint": True,
+        }
+    )
     async def loki_logging(
         operation: Annotated[
             Literal[
