@@ -1,0 +1,29 @@
+# monitoring-mcp — Cursor Rules
+
+## Session Context
+
+Before starting work in this repo, load tool awareness:
+
+- MCP server: FastMCP 3.4.4 (`src/monitoring_mcp/mcp_server.py`), 6 portmanteau tools:
+  `grafana_management`, `prometheus_monitoring`, `loki_logging`,
+  `cross_system_correlation`, `monitoring_status`, `monitoring_shutdown`
+  (see `docs/TOOLS.md`).
+- REST backend: FastAPI `src/monitoring_mcp/server.py` (`monitoring_mcp.server:app`,
+  backend :10851). Full route list: `GET /api/capabilities`.
+- Frontend: `web_sota/` (React + Vite, :10850, `API_BASE` in `src/lib/api.ts`
+  is same-origin by default, absolute only under Tauri).
+- Run: `uv sync --extra dev`, `uv run python -m monitoring_mcp --stdio`,
+  backend `uv run uvicorn monitoring_mcp.server:app --port 10851`,
+  tests `uv run --extra dev pytest -k "not slow"`.
+- Standards: portmanteau tools with `operation` enum, docstrings carry
+  `## Return Format` + `## Examples` (no `Args:` blocks — use
+  `Annotated[..., Field(description=...)]`), structured returns with
+  `success` + `conversational_summary` keys.
+- Env prefix: `MONITORING_MCP_*` (see `docs/CONFIGURATION.md`, `.env.example`).
+- New here? Read `docs/ONBOARDING.md` first (wrappee URLs + keys + sanity checks).
+
+## Guardrails
+
+- Max 5 files per commit; timestamped `.bak` before 3+ file edits.
+- Prove changes by running them (ruff + pytest, never claim green unverified).
+- Never commit `.env`, `node_modules/`, `.venv/`, `*.bak`, `*.mcpb`.
