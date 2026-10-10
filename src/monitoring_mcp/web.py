@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import threading
@@ -5,6 +6,7 @@ import time
 
 import httpx
 from fastapi import Body, FastAPI, Response
+from fastapi.responses import StreamingResponse
 from fastmcp import FastMCP
 
 from .ai import AIRouter
@@ -75,14 +77,19 @@ def setup_webapp(app: FastAPI, mcp_app: FastMCP):
                 "GET /api/llm/models",
                 "GET /api/llm/onboarding",
                 "POST /api/chat",
+                "POST /api/chat/stream",
+                "POST /api/llm/chat",
+                "POST /api/webhooks/alertmanager",
                 "POST /api/shutdown",
                 "GET /api/v1/diagnostics",
             ],
             "features": {
                 "chat": True,
+                "chat_stream": True,
                 "skills": False,
                 "llm_providers": ["ollama", "lm_studio"],
-                "webhooks": False,
+                "llm_chat_proxy": True,
+                "webhooks": True,
             },
         }
 
@@ -133,6 +140,73 @@ def setup_webapp(app: FastAPI, mcp_app: FastMCP):
     async def chat(query: str = Body(..., embed=True)):
         response = await ai_router.process_command(query)
         return response
+
+    @app.post("/api/chat/stream")
+    async def chat_stream(query: str = Body(..., embed=True)):
+        async def _events():
+            try:
+                response = await ai_router.process_command(query)
+                reply = str(response.get("reply", ""))
+            except Exception as exc:
+                yield f"data: {json.dumps({'error': str(exc)})}\n\n"
+                return
+            for i in range(0, max(len(reply), 1), 200):
+                yield f"data: {json.dumps({'delta': reply[i : i + 200]})}\n\n"
+            yield "data: [DONE]\n\n"
+
+        return StreamingResponse(_events(), media_type="text/event-stream")
+
+    @app.post("/api/llm/chat")
+    async def llm_chat(payload: dict = Body(...)):
+        from fastapi import status as _status
+
+        messages = payload.get("messages", []) if isinstance(payload, dict) else []
+        if not messages:
+            return Response(
+                content=json.dumps({"error": "messages array is required"}),
+                status_code=_status.HTTP_400_BAD_REQUEST,
+                media_type="application/json",
+            )
+        provider = payload.get("provider", "ollama")
+        model = payload.get("model", "llama3.2:3b")
+        try:
+            async with httpx.AsyncClient(timeout=60) as client:
+                if provider == "lm_studio":
+                    r = await client.post(
+                        "http://127.0.0.1:1234/v1/chat/completions",
+                        json={"model": model, "messages": messages, "stream": False},
+                    )
+                    r.raise_for_status()
+                    text = r.json()["choices"][0]["message"]["content"]
+                else:
+                    r = await client.post(
+                        "http://127.0.0.1:11434/api/chat",
+                        json={"model": model, "messages": messages, "stream": False},
+                    )
+                    r.raise_for_status()
+                    text = r.json().get("message", {}).get("content", "")
+            return {"reply": text, "provider": provider, "model": model}
+        except Exception as exc:
+            return Response(
+                content=json.dumps({"error": f"LLM provider unreachable: {exc}", "provider": provider}),
+                status_code=_status.HTTP_502_BAD_GATEWAY,
+                media_type="application/json",
+            )
+
+    @app.post("/api/webhooks/alertmanager")
+    async def alertmanager_webhook(payload: dict = Body(...)):
+        from fastapi import status as _status
+
+        alerts = payload.get("alerts") if isinstance(payload, dict) else None
+        if not isinstance(alerts, list):
+            return Response(
+                content=json.dumps({"error": "Alertmanager payload must contain an 'alerts' array"}),
+                status_code=_status.HTTP_400_BAD_REQUEST,
+                media_type="application/json",
+            )
+        names = [a.get("labels", {}).get("alertname", "?") for a in alerts if isinstance(a, dict)]
+        logger.warning("Alertmanager webhook: %d alert(s): %s", len(alerts), ", ".join(names[:5]))
+        return {"status": "ok", "received": len(alerts), "alerts": names}
 
     @app.post("/api/shutdown")
     async def shutdown():

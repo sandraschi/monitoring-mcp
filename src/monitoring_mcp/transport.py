@@ -217,7 +217,29 @@ async def run_server_async(mcp_app, args: argparse.Namespace | None = None, serv
             path = config["path"]
             endpoint = f"http://{host}:{port}{path}"
             logger.info(f"Running in HTTP Streamable mode: {endpoint}")
-            await mcp_app.run_http_async(host=host, port=port, path=path)
+            # Serve the FastMCP ASGI app via uvicorn (NOT mcp.run_http_async(),
+            # which drops CORSMiddleware on the MCP HTTP path).
+            import uvicorn
+            from fastapi.middleware.cors import CORSMiddleware
+
+            asgi_app = mcp_app.http_app(path=path)
+            asgi_app.add_middleware(
+                CORSMiddleware,
+                allow_origins=[
+                    "http://127.0.0.1:10850",
+                    "http://localhost:10850",
+                    "http://127.0.0.1:10851",
+                    "http://localhost:10851",
+                    "tauri://localhost",
+                    "http://tauri.localhost",
+                    "https://tauri.localhost",
+                ],
+                allow_origin_regex=r"https?://tauri\.localhost(:\d+)?",
+                allow_methods=["*"],
+                allow_headers=["*"],
+            )
+            server = uvicorn.Server(uvicorn.Config(asgi_app, host=host, port=port, log_level="info"))
+            await server.serve()
 
         elif transport == "sse":
             host = config["host"]

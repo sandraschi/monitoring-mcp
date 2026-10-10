@@ -80,6 +80,48 @@ def test_shutdown_endpoint_responds_before_exit():
     mock_timer.assert_called_once()
 
 
+def test_chat_stream_ends_with_done():
+    r = client.post("/api/chat/stream", json={"query": "are you there"})
+    assert r.status_code == 200
+    assert "text/event-stream" in r.headers["content-type"]
+    assert "[DONE]" in r.text
+
+
+def test_llm_chat_proxy_declared_behavior():
+    r = client.post(
+        "/api/llm/chat",
+        json={"messages": [{"role": "user", "content": "hi"}], "provider": "ollama"},
+    )
+    assert r.status_code in (200, 502)
+    body = r.json()
+    assert ("reply" in body) or ("error" in body)
+
+
+def test_llm_chat_rejects_empty_messages():
+    r = client.post("/api/llm/chat", json={"messages": []})
+    assert r.status_code == 400
+
+
+def test_alertmanager_webhook_receipt():
+    payload = {
+        "alerts": [
+            {"labels": {"alertname": "HighErrorRate"}, "status": "firing"},
+            {"labels": {"alertname": "DiskFull"}, "status": "resolved"},
+        ]
+    }
+    r = client.post("/api/webhooks/alertmanager", json=payload)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "ok"
+    assert body["received"] == 2
+    assert body["alerts"] == ["HighErrorRate", "DiskFull"]
+
+
+def test_alertmanager_webhook_rejects_malformed():
+    r = client.post("/api/webhooks/alertmanager", json={"foo": "bar"})
+    assert r.status_code == 400
+
+
 async def test_shutdown_tool_registered(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("MONITORING_MCP_STORAGE_PATH", str(tmp_path))
     MonitoringMCPServer(MonitoringConfig(enable_cache=False))
