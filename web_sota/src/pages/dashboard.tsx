@@ -97,6 +97,17 @@ export function Dashboard() {
         </div>
       </div>
 
+      {/* Onboarding cue */}
+      <div className="flex justify-start">
+        <a
+          href="/help"
+          data-testid="onboarding-cue"
+          className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500"
+        >
+          Connect Grafana / Prometheus / Loki — 15-min setup guide
+        </a>
+      </div>
+
       {/* Capability cards */}
       <div className="grid gap-3 md:grid-cols-4">
         {CAPABILITIES.map((cap) => (
