@@ -19,6 +19,7 @@ from fastmcp import FastMCP
 from key_value.aio.stores.disk.store import DiskStore
 
 from .config import MonitoringConfig
+from .skills_prompts import register_skills_prompts
 from .tools.correlation_tool import register_correlation_tool
 from .tools.grafana_tool import register_grafana_tool
 from .tools.loki_tool import register_loki_tool
@@ -97,6 +98,9 @@ class MonitoringMCPServer:
 
         # Self-termination for orderly agent-driven shutdown
         register_shutdown_tool(self.mcp)
+
+        # Prompt templates + capabilities resource (Chat skill-first flow)
+        register_skills_prompts(self.mcp)
 
         logger.info("All monitoring tools registered successfully")
 

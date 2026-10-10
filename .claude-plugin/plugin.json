@@ -1,0 +1,6 @@
+{
+  "name": "monitoring-mcp",
+  "version": "0.1.0",
+  "description": "Grafana + Prometheus + Loki observability assistant: session context and hooks for monitoring-mcp development.",
+  "hooks": "./hooks/hooks.json"
+}
