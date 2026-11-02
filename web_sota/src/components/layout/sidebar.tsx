@@ -1,15 +1,19 @@
 import { cn } from "@/common/utils";
 import {
   Activity,
+  BarChart3,
   BookOpen,
   ChevronLeft,
   ChevronRight,
   Code2,
+  Database,
+  FileText,
   HelpCircle,
   LayoutDashboard,
   LayoutGrid,
   MessageSquare,
   Settings,
+  Siren,
   Wrench,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
@@ -24,6 +28,10 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
   const navItems = [
     { href: "/", label: "Overview", icon: LayoutDashboard },
+    { href: "/prometheus", label: "Metrics", icon: BarChart3 },
+    { href: "/loki", label: "Logs", icon: FileText },
+    { href: "/grafana", label: "Dashboards", icon: Database },
+    { href: "/incidents", label: "Incidents", icon: Siren },
     { href: "/chat", label: "AI Command", icon: MessageSquare },
     { href: "/tools", label: "MCP Tools", icon: Wrench },
     { href: "/skills", label: "Skills", icon: BookOpen },

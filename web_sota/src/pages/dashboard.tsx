@@ -16,27 +16,38 @@ type SystemInfo = {
   mcp: string;
 };
 
+type Overview = {
+  grafana?: { status?: string; datasources?: number; types?: string[]; error?: string };
+  prometheus?: { status?: string; targets_total?: number; targets_up?: number; targets_down?: number; error?: string };
+  loki?: { status?: string; label_count?: number; labels?: string[]; error?: string };
+  alerts?: { firing?: number; pending?: number; total?: number; sample?: { name?: string; state?: string }[]; error?: string };
+  stack?: { grafana?: string; prometheus?: string; loki?: string };
+};
+
 const CAPABILITIES = [
-  { icon: BarChart3, label: "Metrics", desc: "Prometheus query, targets, alerts" },
-  { icon: FileText, label: "Logs", desc: "Loki search, tail, anomaly detection" },
-  { icon: Database, label: "Dashboards", desc: "Grafana create, list, analyze" },
-  { icon: Search, label: "Correlation", desc: "Cross-system root cause analysis" },
+  { icon: BarChart3, label: "Metrics", desc: "Prometheus query, targets, alerts", href: "/prometheus" },
+  { icon: FileText, label: "Logs", desc: "Loki search, tail, anomaly detection", href: "/loki" },
+  { icon: Database, label: "Dashboards", desc: "Grafana create, list, analyze", href: "/grafana" },
+  { icon: Search, label: "Correlation", desc: "Cross-system root cause analysis", href: "/incidents" },
 ];
 
 export function Dashboard() {
   const [health, setHealth] = useState<HealthData | null>(null);
   const [sysInfo, setSysInfo] = useState<SystemInfo | null>(null);
+  const [overview, setOverview] = useState<Overview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
-      const [h, s] = await Promise.allSettled([
+      const [h, s, o] = await Promise.allSettled([
         fetch(`${API_BASE}/api/health`).then(r => r.ok ? r.json() : null),
         fetch(`${API_BASE}/api/status`).then(r => r.ok ? r.json() : null),
+        fetch(`${API_BASE}/api/monitoring/overview`).then(r => r.ok ? r.json() : null),
       ]);
       if (h.status === "fulfilled" && h.value) setHealth(h.value);
       if (s.status === "fulfilled" && s.value) setSysInfo(s.value);
+      if (o.status === "fulfilled" && o.value) setOverview(o.value);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Backend unreachable");
@@ -111,15 +122,17 @@ export function Dashboard() {
       {/* Capability cards */}
       <div className="grid gap-3 md:grid-cols-4">
         {CAPABILITIES.map((cap) => (
-          <Card key={cap.label} className="border-slate-800 bg-slate-950/50">
-            <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-2">
-              <cap.icon className="h-5 w-5 text-blue-500 shrink-0" />
-              <div>
-                <CardTitle className="text-sm font-medium text-slate-200">{cap.label}</CardTitle>
-                <p className="text-xs text-slate-500">{cap.desc}</p>
-              </div>
-            </CardHeader>
-          </Card>
+          <a key={cap.label} href={cap.href}>
+            <Card className="border-slate-800 bg-slate-950/50 hover:bg-slate-900/60 transition-colors cursor-pointer">
+              <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-2">
+                <cap.icon className="h-5 w-5 text-blue-500 shrink-0" />
+                <div>
+                  <CardTitle className="text-sm font-medium text-slate-200">{cap.label}</CardTitle>
+                  <p className="text-xs text-slate-500">{cap.desc}</p>
+                </div>
+              </CardHeader>
+            </Card>
+          </a>
         ))}
       </div>
 
@@ -208,27 +221,28 @@ export function Dashboard() {
                   <p className="text-xs text-slate-500">{error ? "Unreachable" : `Up ${uptimeStr}`}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 text-slate-600">
-                <span className="h-2 w-2 rounded-full bg-slate-700" />
-                <div className="space-y-0.5">
-                  <p className="text-sm font-medium leading-none text-slate-500">Grafana</p>
-                  <p className="text-xs text-slate-600">Awaiting query</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 text-slate-600">
-                <span className="h-2 w-2 rounded-full bg-slate-700" />
-                <div className="space-y-0.5">
-                  <p className="text-sm font-medium leading-none text-slate-500">Prometheus</p>
-                  <p className="text-xs text-slate-600">Awaiting query</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 text-slate-600">
-                <span className="h-2 w-2 rounded-full bg-slate-700" />
-                <div className="space-y-0.5">
-                  <p className="text-sm font-medium leading-none text-slate-500">Loki</p>
-                  <p className="text-xs text-slate-600">Awaiting query</p>
-                </div>
-              </div>
+              {[
+                { name: "Grafana", href: "/grafana", data: overview?.grafana, detail: overview?.grafana?.status === "up" ? `${overview?.grafana?.datasources ?? 0} datasources` : (overview?.grafana?.error ?? "Awaiting query") },
+                { name: "Prometheus", href: "/prometheus", data: overview?.prometheus, detail: overview?.prometheus?.status === "up" ? `${overview?.prometheus?.targets_up ?? 0}/${overview?.prometheus?.targets_total ?? 0} up` : (overview?.prometheus?.error ?? "Awaiting query") },
+                { name: "Loki", href: "/loki", data: overview?.loki, detail: overview?.loki?.status === "up" ? `${overview?.loki?.label_count ?? 0} labels` : (overview?.loki?.error ?? "Awaiting query") },
+              ].map((row) => {
+                const up_ = row.data?.status === "up";
+                const down = row.data?.status === "down";
+                return (
+                  <a key={row.name} href={row.href} className="flex items-center gap-3 hover:bg-slate-900/40 rounded px-1 py-0.5">
+                    <span className={`h-2 w-2 rounded-full ${down ? "bg-red-500" : up_ ? "bg-emerald-500" : "bg-slate-700"}`} />
+                    <div className="space-y-0.5">
+                      <p className={`text-sm font-medium leading-none ${up_ ? "text-slate-200" : "text-slate-500"}`}>{row.name}</p>
+                      <p className="text-xs text-slate-600 truncate max-w-[220px]">{row.detail}</p>
+                    </div>
+                    {row.name === "Prometheus" && (overview?.alerts?.firing ?? 0) > 0 && (
+                      <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500/10 border border-red-500/20 text-red-400">
+                        {overview?.alerts?.firing} firing
+                      </span>
+                    )}
+                  </a>
+                );
+              })}
             </div>
           </CardContent>
         </Card>

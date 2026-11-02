@@ -2,6 +2,10 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { ApiDocs } from "@/pages/ApiDocs";
 import { AppsHub } from "@/pages/AppsHub";
 import Logging from "@/pages/Logging";
+import { Grafana } from "@/pages/grafana";
+import { Incidents } from "@/pages/incidents";
+import { Loki } from "@/pages/loki";
+import { Prometheus } from "@/pages/prometheus";
 import { Skills } from "@/pages/Skills";
 import { Chat } from "@/pages/chat";
 import { Dashboard } from "@/pages/dashboard";
@@ -21,6 +25,10 @@ function App() {
       <AppLayout>
         <Routes>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/prometheus" element={<Prometheus />} />
+          <Route path="/loki" element={<Loki />} />
+          <Route path="/grafana" element={<Grafana />} />
+          <Route path="/incidents" element={<Incidents />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/tools" element={<Tools />} />
           <Route path="/skills" element={<Skills />} />
