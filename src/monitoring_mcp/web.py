@@ -5,8 +5,8 @@ import threading
 import time
 
 import httpx
-from fastapi import Body, FastAPI, Response
-from fastapi.responses import StreamingResponse
+from fastapi import Body, FastAPI, Request, Response
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastmcp import FastMCP
 
 from .ai import AIRouter
@@ -131,6 +131,22 @@ def setup_webapp(app: FastAPI, mcp_app: FastMCP):
     prom = PrometheusClient(cfg)
     loki = LokiClient(cfg)
     grafana = GrafanaClient(cfg)
+
+    @app.exception_handler(httpx.HTTPError)
+    async def _httpx_handler(_request: Request, exc: httpx.HTTPError) -> JSONResponse:
+        """Upstream Grafana/Prometheus/Loki failures become JSON 502s, never plain-text 500s."""
+        return JSONResponse(
+            status_code=502,
+            content={
+                "error": f"Upstream monitoring request failed: {str(exc)[:400]}",
+                "hint": (
+                    "Check MONITORING_MCP_GRAFANA_URL / _PROMETHEUS_URL / _LOKI_URL and "
+                    "credentials (unified stack: Grafana http://localhost:12000 user admin, "
+                    "Prometheus http://localhost:12001, Loki http://localhost:12002). "
+                    "See GET /api/monitoring/config for the active URLs."
+                ),
+            },
+        )
 
     @app.get("/api/status")
     async def get_status():
