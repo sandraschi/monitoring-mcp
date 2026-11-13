@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { API_BASE } from "@/lib/api";
+import { apiJSON } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, AlertTriangle, Play, Server } from "lucide-react";
@@ -51,10 +51,10 @@ export function Prometheus() {
     setLoading(true);
     try {
       const [t, a, r, b] = await Promise.all([
-        fetch(`${API_BASE}/api/prometheus/targets`).then((x) => x.json()),
-        fetch(`${API_BASE}/api/prometheus/alerts`).then((x) => x.json()),
-        fetch(`${API_BASE}/api/prometheus/rules`).then((x) => x.json()),
-        fetch(`${API_BASE}/api/prometheus/build`).then((x) => (x.ok ? x.json() : null)),
+        apiJSON("/api/prometheus/targets"),
+        apiJSON("/api/prometheus/alerts"),
+        apiJSON("/api/prometheus/rules"),
+        apiJSON("/api/prometheus/build").catch(() => null),
       ]);
       setTargets(t?.data?.activeTargets ?? []);
       setAlerts(a?.data?.alerts ?? []);
@@ -77,12 +77,14 @@ export function Prometheus() {
   const runQuery = async () => {
     setQRunning(true);
     try {
-      const res = await fetch(`${API_BASE}/api/prometheus/query`, {
+      const res = await apiJSON("/api/prometheus/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query }),
-      }).then((x) => x.json());
+      });
       setQResult(res?.data?.result ?? []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Query failed");
     } finally {
       setQRunning(false);
     }
@@ -91,13 +93,15 @@ export function Prometheus() {
   const runRange = async () => {
     setRRunning(true);
     try {
-      const res = await fetch(`${API_BASE}/api/prometheus/query_range`, {
+      const res = await apiJSON("/api/prometheus/query_range", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query, ...range }),
-      }).then((x) => x.json());
+      });
       const first: QuerySeries | undefined = res?.data?.result?.[0];
       setRValues((first?.values ?? []).map((v) => parseFloat(v[1])).filter((n) => !Number.isNaN(n)));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Range query failed");
     } finally {
       setRRunning(false);
     }
