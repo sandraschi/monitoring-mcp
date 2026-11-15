@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { API_BASE } from "@/lib/api";
+import { apiJSON } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Database, FolderOpen, Plus, Rocket, Trash2 } from "lucide-react";
@@ -21,20 +21,23 @@ export function Grafana() {
   const [newTitle, setNewTitle] = useState("Fleet Service Health");
   const [newExpr, setNewExpr] = useState("up");
   const [creating, setCreating] = useState(false);
+  const [stackHost, setStackHost] = useState<string | null>(null);
 
   const load = useCallback(async (q = "") => {
     setLoading(true);
     try {
       const params = q ? `?q=${encodeURIComponent(q)}` : "";
-      const [d, ds, f] = await Promise.all([
-        fetch(`${API_BASE}/api/grafana/dashboards${params}`).then((x) => x.json()),
-        fetch(`${API_BASE}/api/grafana/datasources`).then((x) => x.json()),
-        fetch(`${API_BASE}/api/grafana/folders`).then((x) => x.json()),
+      const [d, ds, f, cfg] = await Promise.all([
+        apiJSON(`/api/grafana/dashboards${params}`),
+        apiJSON("/api/grafana/datasources"),
+        apiJSON("/api/grafana/folders"),
+        apiJSON("/api/monitoring/config").catch(() => null),
       ]);
       if (d?.error) throw new Error(d.error);
       setDashboards(d?.dashboards ?? []);
       setDatasources(ds?.datasources ?? []);
       setFolders(f?.folders ?? []);
+      setStackHost(cfg?.grafana_url ?? null);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Grafana unreachable (auth? URL?)");
@@ -51,7 +54,7 @@ export function Grafana() {
     setProvisioning(true);
     setProvisionMsg(null);
     try {
-      const res = await fetch(`${API_BASE}/api/grafana/provision/fleet-overview`, { method: "POST" }).then((x) => x.json());
+      const res = await apiJSON("/api/grafana/provision/fleet-overview", { method: "POST" });
       if (res?.error) throw new Error(res.error);
       setProvisionMsg(`Provisioned Fleet Overview (folder ${res?.folderId ?? "?"}). Reloading…`);
       await load(search);
@@ -82,11 +85,11 @@ export function Grafana() {
           },
         ],
       };
-      const res = await fetch(`${API_BASE}/api/grafana/dashboards`, {
+      const res = await apiJSON("/api/grafana/dashboards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ dashboard, folderId: fleet?.id ?? undefined }),
-      }).then((x) => x.json());
+      });
       if (res?.error) throw new Error(res.error);
       setNewTitle("");
       await load(search);
@@ -99,7 +102,12 @@ export function Grafana() {
 
   const removeDashboard = async (uid?: string) => {
     if (!uid || !confirm(`Delete dashboard ${uid}?`)) return;
-    await fetch(`${API_BASE}/api/grafana/dashboard/${encodeURIComponent(uid)}`, { method: "DELETE" });
+    try {
+      await apiJSON(`/api/grafana/dashboard/${encodeURIComponent(uid)}`, { method: "DELETE" });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Delete failed");
+      return;
+    }
     await load(search);
   };
 
@@ -110,6 +118,7 @@ export function Grafana() {
           <h2 className="text-2xl font-bold tracking-tight text-white">Grafana — Dashboards</h2>
           <p className="text-slate-400">
             {loading ? "Loading…" : `${dashboards.length} dashboards · ${datasources.length} datasources · ${folders.length} folders`}
+            {stackHost ? ` · talking to ${stackHost}` : ""}
           </p>
         </div>
         <div className="flex gap-2">
