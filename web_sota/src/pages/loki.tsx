@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { API_BASE } from "@/lib/api";
+import { apiJSON } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, Play, Tags } from "lucide-react";
@@ -18,7 +18,7 @@ export function Loki() {
 
   const loadLabels = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/loki/labels`).then((x) => x.json());
+      const res = await apiJSON("/api/loki/labels");
       setLabels(res?.data ?? []);
       setError(null);
     } catch (e) {
@@ -28,12 +28,16 @@ export function Loki() {
 
   useEffect(() => {
     loadLabels();
-  }, [loadLabels]);
+  }, []);
 
   const loadValues = async (name: string) => {
     if (labelValues[name]) return;
-    const res = await fetch(`${API_BASE}/api/loki/label/${encodeURIComponent(name)}/values`).then((x) => x.json());
-    setLabelValues((prev) => ({ ...prev, [name]: res?.data ?? [] }));
+    try {
+      const res = await apiJSON(`/api/loki/label/${encodeURIComponent(name)}/values`);
+      setLabelValues((prev) => ({ ...prev, [name]: res?.data ?? [] }));
+    } catch {
+      /* label values are best-effort */
+    }
   };
 
   const runQuery = async (range = false) => {
@@ -43,11 +47,11 @@ export function Loki() {
       const body = range
         ? { query, start: "now-1h", end: "now", limit }
         : { query, limit };
-      const res = await fetch(`${API_BASE}${endpoint}`, {
+      const res = await apiJSON(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
-      }).then((x) => x.json());
+      });
       const result: LokiStream[] = res?.data?.result ?? [];
       setStreams(result);
       setTotalEntries(result.reduce((n, s) => n + s.values.length, 0));
