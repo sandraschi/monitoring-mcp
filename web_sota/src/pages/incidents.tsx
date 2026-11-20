@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { API_BASE } from "@/lib/api";
+import { apiJSON } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, HeartPulse, Search } from "lucide-react";
@@ -19,7 +19,7 @@ export function Incidents() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/correlation/health`).then((x) => x.json());
+      const res = await apiJSON("/api/correlation/health");
       if (res?.error) throw new Error(res.error);
       setHealth(res);
       setError(null);
@@ -40,7 +40,7 @@ export function Incidents() {
     if (!description.trim()) return;
     setCorrelating(true);
     try {
-      const res = await fetch(`${API_BASE}/api/correlation/incident`, {
+      const res = await apiJSON("/api/correlation/incident", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -49,8 +49,10 @@ export function Incidents() {
           metric_query: metricQuery,
           log_query: logQuery,
         }),
-      }).then((x) => x.json());
+      });
       setIncident(res);
+    } catch (e) {
+      setIncident({ error: e instanceof Error ? e.message : "Correlation failed" });
     } finally {
       setCorrelating(false);
     }
